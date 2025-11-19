@@ -42,7 +42,7 @@ internal enum class DisabledReason {
     NO_PERMISSION
 }
 
-internal data class UiState(
+internal data class DeviceSelectViewState(
     val disabledReason: DisabledReason = DisabledReason.NONE,
     val devices: List<Device> = emptyList()
 )
@@ -50,10 +50,12 @@ internal data class UiState(
 class DeviceSelectViewModel(app: Application) : AndroidViewModel(app) {
     private val _app = app
     private val _refreshing = MutableStateFlow(false)
-    private val _state = MutableStateFlow(UiState())
+    private val _state = MutableStateFlow(DeviceSelectViewState())
+    private val _selectedDevice = MutableStateFlow<Device?>(null)
 
-    internal val state: StateFlow<UiState> = _state
+    internal val state: StateFlow<DeviceSelectViewState> = _state
     internal val refreshing: StateFlow<Boolean> = _refreshing
+    internal val selectedDevice: StateFlow<Device?> = _selectedDevice
 
     fun refresh() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -63,27 +65,35 @@ class DeviceSelectViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun queryState(): UiState {
+    private fun queryState(): DeviceSelectViewState {
         val ctx = _app.applicationContext
 
         val perm = Manifest.permission.BLUETOOTH_CONNECT
         if (ContextCompat.checkSelfPermission(ctx, perm) != PackageManager.PERMISSION_GRANTED) {
-            return UiState(
+            return DeviceSelectViewState(
                 disabledReason = DisabledReason.NO_PERMISSION
             )
         }
 
-        val bluetoothManager = ctx.getSystemService(BluetoothManager::class.java) ?: return UiState(disabledReason = DisabledReason.BLUETOOTH_OFF)
+        val bluetoothManager = ctx.getSystemService(BluetoothManager::class.java) ?: return DeviceSelectViewState(disabledReason = DisabledReason.BLUETOOTH_OFF)
         val adapter = bluetoothManager.adapter
 
         if (!adapter.isEnabled) {
-            return UiState(disabledReason = DisabledReason.BLUETOOTH_OFF)
+            return DeviceSelectViewState(disabledReason = DisabledReason.BLUETOOTH_OFF)
         }
 
-        return UiState(
+        return DeviceSelectViewState(
             disabledReason = DisabledReason.NONE,
             devices = Device.get(ctx).toList()
         )
+    }
+
+    fun selectDevice(device: Device) {
+        _selectedDevice.value = device
+    }
+
+    fun clearSelectedDevice() {
+        _selectedDevice.value = null
     }
 }
 

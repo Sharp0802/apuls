@@ -1,6 +1,7 @@
-package com.apulsetech.apuls
+package com.apulsetech.apuls.views
 
 import android.app.Application
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,7 +63,7 @@ data class ConsoleChunk(
     val text: String
 )
 
-data class UiState(
+data class DeviceCommViewState(
     val status: String = "Idle",
     val chunks: List<ConsoleChunk> = emptyList(),
     val input: String = "",
@@ -70,8 +71,8 @@ data class UiState(
 )
 
 class DeviceCommViewModel(app: Application) : AndroidViewModel(app) {
-    private val _state = MutableStateFlow(UiState())
-    internal val state: StateFlow<UiState> = _state
+    private val _state = MutableStateFlow(DeviceCommViewState())
+    internal val state: StateFlow<DeviceCommViewState> = _state
 
     private var _socket: DeviceSocket? = null
     private var readJob: Job? = null
@@ -120,32 +121,37 @@ class DeviceCommViewModel(app: Application) : AndroidViewModel(app) {
 
                     val chunk = buffer.copyOf(len).decodeToString()
 
-                    rxPending += chunk
-
-                    while (true) {
-                        val idx = rxPending.indexOf("\r\n")
-                        if (idx < 0) {
-                            break
+                    chunk.forEach { c -> when (c) {
+                        '\r' -> {
+                            // ignore
                         }
 
-                        val lineWithCrLf = rxPending.substring(0, idx + 2)
-                        rxPending = rxPending.substring(idx + 2)
-
-                        withContext(Dispatchers.Main) {
-                            _state.value = _state.value.let { current ->
-                                current.copy(
-                                    chunks = current.chunks + ConsoleChunk(
-                                        dir = MsgDir.RX,
-                                        text = lineWithCrLf
+                        '\n' -> {
+                            // flush line
+                            withContext(Dispatchers.Main) {
+                                _state.value = _state.value.let { current ->
+                                    current.copy(
+                                        chunks = current.chunks + ConsoleChunk(
+                                            dir = MsgDir.RX,
+                                            text = rxPending
+                                        )
                                     )
-                                )
+                                }
+
+                                rxPending = ""
+                                flushPendingTx()
                             }
                         }
 
-                        withContext(Dispatchers.Main) {
-                            flushPendingTx()
-                        }
-                    }
+                        else -> rxPending += c
+                    } }
+                }
+
+                withContext(Dispatchers.Main) {
+                    _state.value = _state.value.copy(
+                        status = "End Of Stream",
+                        connected = false
+                    )
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
@@ -165,11 +171,9 @@ class DeviceCommViewModel(app: Application) : AndroidViewModel(app) {
         if (!_state.value.connected) return
         if (text.isEmpty()) return
 
-        val toSend = text + "\r\n"
-
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val payload = toSend.encodeToByteArray()
+                val payload = (text + "\r\n").encodeToByteArray()
                 s.write(payload)
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
@@ -183,7 +187,7 @@ class DeviceCommViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         synchronized(this) {
-            txPending += toSend
+            txPending += text
         }
 
         scheduleTxFlushTimeout()
@@ -258,34 +262,76 @@ data class CommandItem(
     val command: String
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DeviceCommView(device: Device, onBack: () -> Unit) {
-    val vm: DeviceCommViewModel = viewModel()
-    val uiState by vm.state.collectAsState()
+private fun DeviceNotSelectedContent(onBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("SPP Communication") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "No device selected",
+                color = colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+fun DeviceCommView(vm: DeviceSelectViewModel, onBack: () -> Unit) {
+    val commVm: DeviceCommViewModel = viewModel()
+    val uiState by commVm.state.collectAsState()
+    val selectedDevice by vm.selectedDevice.collectAsState()
+
+    LaunchedEffect(selectedDevice) {
+        selectedDevice?.let { commVm.connect(it) } ?: commVm.stop()
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { commVm.stop() }
+    }
+
+    if (selectedDevice == null) {
+        DeviceNotSelectedContent(onBack = onBack)
+        return
+    }
+
+    BackHandler(onBack = onBack)
 
     val commands = remember {
         listOf(
             CommandItem("Inventory", ":inventory"),
             CommandItem("Stop", ":stop"),
+            CommandItem("Service serial", ":ser_serial 1"),
+            CommandItem("No serial", ":ser_serial 0"),
         )
-    }
-
-    LaunchedEffect(device) {
-        vm.connect(device)
-    }
-
-    DisposableEffect(Unit) {
-        onDispose { vm.stop() }
     }
 
     DeviceCommContent(
         uiState = uiState,
         onBack = onBack,
-        onInputChange = { vm.updateInput(it) },
-        onSendClick = { vm.send(uiState.input) },
+        onInputChange = { commVm.updateInput(it) },
+        onSendClick = { commVm.send(uiState.input) },
         commands = commands,
         onCommandClick = { cmd ->
-            vm.send(cmd.command)
+            commVm.send(cmd.command)
         }
     )
 }
@@ -293,7 +339,7 @@ fun DeviceCommView(device: Device, onBack: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DeviceCommContent(
-    uiState: UiState,
+    uiState: DeviceCommViewState,
     onBack: () -> Unit,
     onInputChange: (String) -> Unit,
     onSendClick: () -> Unit,
@@ -350,6 +396,7 @@ private fun DeviceCommContent(
                         }
                         withStyle(style) {
                             append(chunk.text)
+                            append("\n")
                         }
                     }
                 }

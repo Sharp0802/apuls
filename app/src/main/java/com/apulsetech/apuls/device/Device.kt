@@ -1,7 +1,6 @@
 package com.apulsetech.apuls.device
 
 import android.content.Context
-import kotlinx.serialization.Serializable
 import java.io.Closeable
 
 abstract class DeviceSocket : Closeable {
@@ -9,7 +8,6 @@ abstract class DeviceSocket : Closeable {
     abstract fun write(buffer: ByteArray)
 }
 
-@Serializable
 abstract class Device {
     abstract fun name(): String
     abstract fun desc(): String
@@ -17,7 +15,7 @@ abstract class Device {
 
     companion object {
         fun get(ctx: Context): Iterable<Device> {
-            return BluetoothDevice.get(ctx)//.plus(UsbDevice.get(ctx))
+            return BluetoothDevice.get(ctx).plus(UsbDevice.get(ctx))
         }
     }
 }

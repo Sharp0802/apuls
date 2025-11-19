@@ -1,22 +1,24 @@
 package com.apulsetech.apuls
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
-import com.apulsetech.apuls.device.Device
 import com.apulsetech.apuls.ui.theme.ApulsTheme
+import com.apulsetech.apuls.views.DeviceCommView
 import com.apulsetech.apuls.views.DeviceSelectView
 import com.apulsetech.apuls.views.DeviceSelectViewModel
-import kotlinx.serialization.Serializable
 
-@Serializable
-object DeviceSelect
+private const val ROUTE_DEVICE_SELECT = "device_select"
+private const val ROUTE_DEVICE_COMM = "device_comm"
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,28 +28,39 @@ class MainActivity : ComponentActivity() {
             ApulsTheme {
                 val navController = rememberNavController()
                 val vm: DeviceSelectViewModel = viewModel()
+                val permissionLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.RequestPermission()
+                ) { granted ->
+                    if (granted) {
+                        vm.refresh()
+                    }
+                }
 
 
                 NavHost(
                     navController = navController,
-                    startDestination = DeviceSelect
+                    startDestination = ROUTE_DEVICE_SELECT
                 ) {
-                    composable<DeviceSelect> {
+                    composable(ROUTE_DEVICE_SELECT) {
                         DeviceSelectView(
                             vm = vm,
                             onDeviceSelected = { dev ->
-                                navController.navigate(dev)
+                                vm.selectDevice(dev)
+                                navController.navigate(ROUTE_DEVICE_COMM)
                             },
                             onRequestPermission = {
-                                // BLUETOOTH_CONNECT 권한 런처 호출 자리
+                                permissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
                             }
                         )
                     }
 
-                    composable<Device> { backStackEntry ->
+                    composable(ROUTE_DEVICE_COMM) {
                         DeviceCommView(
-                            device = backStackEntry.toRoute<Device>(),
-                            onBack = { navController.popBackStack() }
+                            vm = vm,
+                            onBack = {
+                                vm.clearSelectedDevice()
+                                navController.popBackStack()
+                            }
                         )
                     }
                 }

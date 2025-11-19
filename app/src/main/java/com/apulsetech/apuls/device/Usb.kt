@@ -5,9 +5,7 @@ import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import com.hoho.android.usbserial.driver.UsbSerialPort
 import com.hoho.android.usbserial.driver.UsbSerialProber
-import kotlinx.serialization.Serializable
 
-@Serializable
 internal class UsbDevice(manager: UsbManager, inner: UsbDevice) : Device() {
     private val _manager: UsbManager = manager
     private val _inner: UsbDevice = inner
@@ -25,11 +23,13 @@ internal class UsbDevice(manager: UsbManager, inner: UsbDevice) : Device() {
             return null
         }
 
-        val driver = UsbSerialProber.getDefaultProber().probeDevice(_inner)
+        val driver = UsbSerialProber.getDefaultProber().probeDevice(_inner) ?: return null
         val conn = _manager.openDevice(_inner) ?: return null
 
         val port = driver.ports[0]
         port.open(conn)
+        port.dtr = true
+        port.rts = true
         port.setParameters(115200, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE)
 
         return UsbDeviceSocket(port)

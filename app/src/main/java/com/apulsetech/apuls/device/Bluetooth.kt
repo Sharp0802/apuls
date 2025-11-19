@@ -7,11 +7,10 @@ import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
 import android.content.Context
 import android.content.pm.PackageManager
-import kotlinx.serialization.Serializable
+import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 
-@Serializable
 internal class BluetoothDevice : Device {
     private val _inner: BluetoothDevice
 
@@ -28,8 +27,18 @@ internal class BluetoothDevice : Device {
         return _inner.address
     }
 
-    override fun open(): DeviceSocket {
-        return BluetoothDeviceSocket(_inner.createRfcommSocketToServiceRecord(SPP_UUID))
+    override fun open(): DeviceSocket? {
+        val socket = _inner.createRfcommSocketToServiceRecord(SPP_UUID)
+        return try {
+            socket.connect()
+            BluetoothDeviceSocket(socket)
+        } catch (e: IOException) {
+            try {
+                socket.close()
+            } catch (_: IOException) {
+            }
+            null
+        }
     }
 
     companion object {
