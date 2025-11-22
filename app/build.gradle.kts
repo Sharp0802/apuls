@@ -22,7 +22,7 @@ tasks.register("populateCommands") {
         }
 
         val content = StringBuilder()
-        content.append("/// <generated />\n\n")
+        content.append("@file:Suppress(\"EnumEntryName\", \"SpellCheckingInspection\", \"unused\")\n\n")
         content.append("package com.apulsetech.apuls.command\n\n")
         content.append("import com.apulsetech.apuls.data.*\n\n")
         content.append("enum class CommandDeclarations(value: CommandDeclaration) {\n")
@@ -70,7 +70,7 @@ android {
 
     defaultConfig {
         applicationId = "com.apulsetech.apuls"
-        minSdk = 26
+        minSdk = 31
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"

@@ -37,7 +37,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -46,9 +45,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavHost
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -223,6 +219,7 @@ fun DeviceCommView(
 
             NavHost(nav, startDestination = "inventory") {
                 composable("settings") {
+                    @Suppress("AssignedValueIsNeverRead")
                     title = "Settings"
                     BackHandler(true) { }
 
@@ -230,6 +227,7 @@ fun DeviceCommView(
                 }
 
                 composable("terminal") {
+                    @Suppress("AssignedValueIsNeverRead")
                     title = "Terminal"
                     BackHandler(true) { }
 
@@ -249,6 +247,7 @@ fun DeviceCommView(
                 }
 
                 composable("inventory") {
+                    @Suppress("AssignedValueIsNeverRead")
                     title = "Inventory"
                     BackHandler(true) { }
 
