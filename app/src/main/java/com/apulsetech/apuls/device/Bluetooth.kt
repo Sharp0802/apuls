@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
 import android.content.Context
 import android.content.pm.PackageManager
+import android.util.Log
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -33,6 +34,7 @@ internal class BluetoothDevice : Device {
             socket.connect()
             BluetoothDeviceSocket(socket)
         } catch (e: IOException) {
+            Log.e("BluetoothDevice", e.toString())
             try {
                 socket.close()
             } catch (_: IOException) {
