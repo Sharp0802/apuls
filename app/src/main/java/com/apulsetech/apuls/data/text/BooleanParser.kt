@@ -1,4 +1,4 @@
-package com.apulsetech.apuls.data
+package com.apulsetech.apuls.data.text
 
 import java.text.ParseException
 
@@ -10,13 +10,4 @@ class BooleanParser : IParser<Boolean> {
             else -> throw ParseException("Invalid boolean format '$text'", 0)
         }
     }
-}
-
-class IntParser : IParser<Int> {
-    override fun parse(text: String): Int =
-        text.toIntOrNull() ?: throw ParseException("Invalid number format '$text'", 0)
-}
-
-class StringParser : IParser<String> {
-    override fun parse(text: String): String = text
 }

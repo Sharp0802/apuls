@@ -1,4 +1,4 @@
-package com.apulsetech.apuls.data
+package com.apulsetech.apuls.data.text
 
 import java.text.ParseException
 import kotlin.jvm.Throws

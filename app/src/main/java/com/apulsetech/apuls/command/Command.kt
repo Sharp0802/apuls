@@ -1,6 +1,6 @@
 package com.apulsetech.apuls.command
 
-import com.apulsetech.apuls.data.IParser
+import com.apulsetech.apuls.data.text.IParser
 import java.io.InvalidObjectException
 import java.text.ParseException
 import kotlin.reflect.KClass

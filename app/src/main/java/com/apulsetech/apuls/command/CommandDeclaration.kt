@@ -1,6 +1,6 @@
 package com.apulsetech.apuls.command
 
-import com.apulsetech.apuls.data.Parser
+import com.apulsetech.apuls.data.text.Parser
 import java.text.ParseException
 import kotlin.reflect.KClass
 
