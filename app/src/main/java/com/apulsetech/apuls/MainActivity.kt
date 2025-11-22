@@ -1,7 +1,6 @@
 package com.apulsetech.apuls
 
 import android.Manifest
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -36,7 +35,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-
                 NavHost(
                     navController = navController,
                     startDestination = ROUTE_DEVICE_SELECT
@@ -55,13 +53,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable(ROUTE_DEVICE_COMM) {
-                        DeviceCommView(
-                            vm = vm,
-                            onBack = {
-                                vm.clearSelectedDevice()
-                                navController.popBackStack()
-                            }
-                        )
+                        DeviceCommView(vm.selectedDevice.value!!)
                     }
                 }
             }

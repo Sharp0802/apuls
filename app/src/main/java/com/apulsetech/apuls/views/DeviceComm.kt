@@ -1,482 +1,333 @@
 package com.apulsetech.apuls.views
 
-import android.app.Application
+import android.util.Log
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.material.icons.rounded.CellTower
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Terminal
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.BottomAppBarDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHost
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.apulsetech.apuls.device.Device
 import com.apulsetech.apuls.device.DeviceSocket
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
-enum class MsgDir { RX, TX }
+object Line {
+    const val TX = 0
+    const val RX = 1
+    const val ERR = 2
+}
 
-data class ConsoleChunk(
-    val dir: MsgDir,
-    val text: String
+data class UiState(
+    val state: String = "", val connected: Boolean = false, val loading: Boolean = false
 )
 
-data class DeviceCommViewState(
-    val status: String = "Idle",
-    val chunks: List<ConsoleChunk> = emptyList(),
-    val input: String = "",
-    val connected: Boolean = false
-)
+class DeviceCommViewModel : ViewModel() {
+    private val _state = MutableStateFlow(UiState())
+    val state = _state.asStateFlow()
 
-class DeviceCommViewModel(app: Application) : AndroidViewModel(app) {
-    private val _state = MutableStateFlow(DeviceCommViewState())
-    internal val state: StateFlow<DeviceCommViewState> = _state
+    var input by mutableStateOf("")
+        private set
 
-    private var _socket: DeviceSocket? = null
-    private var readJob: Job? = null
+    private val _logs = mutableStateListOf<ConsoleLine>()
+    val logs: List<ConsoleLine> get() = _logs
 
-    private var rxPending: String = ""
-    private var txPending: String = ""
-    private var txFlushJob: Job? = null
-    private val txFlushDelayMs = 200L
+    private var openJob: Job? = null
+    private var socket: DeviceSocket? = null
 
-    fun connect(device: Device) {
-        if (readJob != null) return
-
-        _state.value = _state.value.copy(
-            status = "Connecting...",
-            connected = false
-        )
-
-        readJob = viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val socket = device.open()
-                if (socket == null) {
-                    withContext(Dispatchers.Main) {
-                        _state.value = _state.value.copy(
-                            status = "No permission to open device",
-                            connected = false
-                        )
-                    }
-
-                    return@launch
-                }
-
-                _socket = socket
-
-                withContext(Dispatchers.Main) {
-                    _state.value = _state.value.copy(
-                        status = "Connected",
-                        connected = true
-                    )
-                }
-
-                val buffer = ByteArray(1024)
-
-                while (isActive) {
-                    val len = _socket!!.read(buffer)
-                    if (len == -1) break
-
-                    val chunk = buffer.copyOf(len).decodeToString()
-
-                    chunk.forEach { c -> when (c) {
-                        '\r' -> {
-                            // ignore
-                        }
-
-                        '\n' -> {
-                            // flush line
-                            withContext(Dispatchers.Main) {
-                                _state.value = _state.value.let { current ->
-                                    current.copy(
-                                        chunks = current.chunks + ConsoleChunk(
-                                            dir = MsgDir.RX,
-                                            text = rxPending
-                                        )
-                                    )
-                                }
-
-                                rxPending = ""
-                                flushPendingTx()
-                            }
-                        }
-
-                        else -> rxPending += c
-                    } }
-                }
-
-                withContext(Dispatchers.Main) {
-                    _state.value = _state.value.copy(
-                        status = "End Of Stream",
-                        connected = false
-                    )
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    _state.value = _state.value.copy(
-                        status = "Error: ${e.message}",
-                        connected = false
-                    )
-                }
-            } finally {
-                closeSocketInternal()
+    fun open(device: Device) {
+        openJob = viewModelScope.launch(Dispatchers.IO) {
+            Dispatchers.Main.run {
+                _state.value = _state.value.copy(state = "Connecting...", loading = true)
             }
-        }
-    }
 
-    fun send(text: String) {
-        val s = _socket ?: return
-        if (!_state.value.connected) return
-        if (text.isEmpty()) return
-
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val payload = (text + "\r\n").encodeToByteArray()
-                s.write(payload)
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    _state.value = _state.value.copy(
-                        status = "Send error: ${e.message}",
-                        connected = false
-                    )
+            val socket = try {
+                device.open()
+            } catch (e: Throwable) {
+                Dispatchers.Main.run {
+                    _state.value = _state.value.copy(state = e.toString(), loading = false)
                 }
-                stop()
+                return@launch
             }
-        }
 
-        synchronized(this) {
-            txPending += text
-        }
+            if (socket == null) {
+                Dispatchers.Main.run {
+                    _state.value = _state.value.copy(state = "Cannot open device", loading = false)
+                }
+                return@launch
+            }
 
-        scheduleTxFlushTimeout()
+            this@DeviceCommViewModel.socket = socket
 
-        _state.value = _state.value.copy(input = "")
-    }
-
-    private fun flushPendingTx() {
-        val text: String
-        synchronized(this) {
-            if (txPending.isEmpty()) return
-            text = txPending
-            txPending = ""
-        }
-
-        txFlushJob?.cancel()
-        txFlushJob = null
-
-        _state.value = _state.value.let { current ->
-            current.copy(
-                chunks = current.chunks + ConsoleChunk(
-                    dir = MsgDir.TX,
-                    text = text
+            Dispatchers.Main.run {
+                _state.value = _state.value.copy(
+                    state = "Connected", loading = false, connected = true
                 )
-            )
-        }
-    }
-
-    private fun scheduleTxFlushTimeout() {
-        if (txFlushJob?.isActive == true) return
-
-        txFlushJob = viewModelScope.launch {
-            delay(txFlushDelayMs)
-            withContext(Dispatchers.Main) {
-                flushPendingTx()
             }
+
+            val lineBuffer = mutableListOf<Byte>()
+            val readBuffer = ByteArray(8192)
+
+            while (isActive) {
+                val read = socket.read(readBuffer)
+                if (read == -1) break
+                if (read == 0) continue
+
+                for (i in 0 until read) {
+                    if (lineBuffer.lastOrNull() == '\r'.code.toByte() && readBuffer[i] == '\n'.code.toByte()) {
+                        val line = lineBuffer.subList(0, lineBuffer.lastIndex).toByteArray()
+                            .toString(Charsets.UTF_8)
+                        Log.i("DeviceLoop", line)
+                        onReceived(line)
+                        lineBuffer.clear()
+                    } else {
+                        lineBuffer.add(readBuffer[i])
+                    }
+                }
+            }
+
+            stop()
         }
     }
 
+    private fun onReceived(line: String) {
+        _logs.add(ConsoleLine(line, Line.RX))
+    }
 
-    fun updateInput(newInput: String) {
-        _state.value = _state.value.copy(input = newInput)
+    fun send(line: String) {
+        val socket = socket ?: return
+
+        socket.write((line + "\r\n").toByteArray())
+        _logs.add(ConsoleLine(line, Line.TX))
+    }
+
+    fun updateInput(input: String) {
+        this.input = input
     }
 
     fun stop() {
-        readJob?.cancel()
-        readJob = null
-        closeSocketInternal()
-        _state.value = _state.value.copy(
-            status = "Disconnected",
-            connected = false
-        )
-    }
+        socket?.close()
 
-    private fun closeSocketInternal() {
-        try {
-            _socket?.close()
-        } catch (_: Exception) {
-        } finally {
-            _socket = null
-        }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        stop()
-    }
-}
-
-data class CommandItem(
-    val label: String,
-    val command: String
-)
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DeviceNotSelectedContent(onBack: () -> Unit) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("SPP Communication") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "No device selected",
-                color = colorScheme.onSurfaceVariant
+        Dispatchers.Main.run {
+            _state.value = _state.value.copy(
+                state = "Disconnected", loading = false, connected = false
             )
         }
     }
-}
-
-@Composable
-fun DeviceCommView(vm: DeviceSelectViewModel, onBack: () -> Unit) {
-    val commVm: DeviceCommViewModel = viewModel()
-    val uiState by commVm.state.collectAsState()
-    val selectedDevice by vm.selectedDevice.collectAsState()
-
-    LaunchedEffect(selectedDevice) {
-        selectedDevice?.let { commVm.connect(it) } ?: commVm.stop()
-    }
-
-    DisposableEffect(Unit) {
-        onDispose { commVm.stop() }
-    }
-
-    if (selectedDevice == null) {
-        DeviceNotSelectedContent(onBack = onBack)
-        return
-    }
-
-    BackHandler(onBack = onBack)
-
-    val commands = remember {
-        listOf(
-            CommandItem("Inventory", ":inventory"),
-            CommandItem("Stop", ":stop"),
-            CommandItem("Service serial", ":ser_serial 1"),
-            CommandItem("No serial", ":ser_serial 0"),
-        )
-    }
-
-    DeviceCommContent(
-        uiState = uiState,
-        onBack = onBack,
-        onInputChange = { commVm.updateInput(it) },
-        onSendClick = { commVm.send(uiState.input) },
-        commands = commands,
-        onCommandClick = { cmd ->
-            commVm.send(cmd.command)
-        }
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DeviceCommContent(
-    uiState: DeviceCommViewState,
-    onBack: () -> Unit,
-    onInputChange: (String) -> Unit,
-    onSendClick: () -> Unit,
-    commands: List<CommandItem>,
-    onCommandClick: (CommandItem) -> Unit,
+fun DeviceCommView(
+    device: Device, vm: DeviceCommViewModel = viewModel()
 ) {
+    val state by vm.state.collectAsState()
+    val nav = rememberNavController()
+
+    var title by rememberSaveable { mutableStateOf("") }
+
+    vm.open(device)
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("SPP Communication") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                title = {
+                    Text(title)
+                },
+                actions = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(end = 16.dp)
+                    ) {
+                        Text(
+                            text = state.state,
+                            color = if (state.connected) colorScheme.primary else colorScheme.error
                         )
                     }
                 }
             )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-        ) {
-            Text(
-                text = uiState.status,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                color = if (uiState.connected)
-                    colorScheme.primary
-                else
-                    colorScheme.error
-            )
-
-            HorizontalDivider()
-
-            val scrollState = rememberScrollState()
-            val colorScheme = colorScheme
-            val chunks = uiState.chunks
-
-            val consoleText: AnnotatedString = remember(chunks, colorScheme) {
-                buildAnnotatedString {
-                    chunks.forEach { chunk ->
-                        val style = when (chunk.dir) {
-                            MsgDir.RX -> SpanStyle(
-                                color = colorScheme.secondary
-                            )
-                            MsgDir.TX -> SpanStyle(
-                                color = colorScheme.primary
-                            )
-                        }
-                        withStyle(style) {
-                            append(chunk.text)
-                            append("\n")
-                        }
+        },
+        bottomBar = {
+            BottomAppBar(
+                actions = {
+                    IconButton(onClick = { nav.navigate("settings") }) {
+                        Icon(Icons.Rounded.Settings, "Settings")
+                    }
+                    IconButton(onClick = { nav.navigate("terminal") }) {
+                        Icon(Icons.Rounded.Terminal, "Terminal")
+                    }
+                },
+                floatingActionButton = {
+                    FloatingActionButton(
+                        onClick = { nav.navigate("inventory") },
+                        containerColor = BottomAppBarDefaults.bottomAppBarFabColor,
+                        elevation = FloatingActionButtonDefaults.bottomAppBarFabElevation()
+                    ) {
+                        Icon(Icons.Rounded.CellTower, "Inventory")
                     }
                 }
-            }
-
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(8.dp)
-                    .verticalScroll(scrollState)
-            ) {
-                Text(
-                    text = consoleText,
-                    fontFamily = FontFamily.Monospace
-                )
-            }
-
-            LaunchedEffect(consoleText.length) {
-                scrollState.animateScrollTo(scrollState.maxValue)
-            }
-
-            HorizontalDivider()
-
-            CommandPalette(
-                commands = commands,
-                enabled = uiState.connected,
-                onCommandClick = onCommandClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp)
             )
+        }
+    ) { inner ->
+        Column(modifier = Modifier.padding(inner)) {
+            val padding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextField(
-                    value = uiState.input,
-                    onValueChange = onInputChange,
-                    modifier = Modifier.weight(1f),
-                    enabled = uiState.connected
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = onSendClick,
-                    enabled = uiState.connected && uiState.input.isNotEmpty()
-                ) {
-                    Text("Send")
+            NavHost(nav, startDestination = "inventory") {
+                composable("settings") {
+                    title = "Settings"
+                    BackHandler(true) { }
+
+                    // TODO
+                }
+
+                composable("terminal") {
+                    title = "Terminal"
+                    BackHandler(true) { }
+
+                    DeviceCommContent(
+                        state = state,
+                        input = vm.input,
+                        logs = vm.logs,
+                        onInputChanged = {
+                            vm.updateInput(it)
+                        },
+                        onSubmit = {
+                            vm.send(vm.input)
+                            vm.updateInput("")
+                        },
+                        modifier = Modifier.padding(padding)
+                    )
+                }
+
+                composable("inventory") {
+                    title = "Inventory"
+                    BackHandler(true) { }
+
+                    // TODO
                 }
             }
         }
     }
 }
 
-@Composable
-private fun CommandPalette(
-    commands: List<CommandItem>,
-    enabled: Boolean,
-    onCommandClick: (CommandItem) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    if (commands.isEmpty()) return
 
-    LazyColumn(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(160.dp)
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-    ) {
-        items(commands) { cmd ->
-            Text(
-                text = cmd.label,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(enabled = enabled) { onCommandClick(cmd) }
-                    .padding(8.dp)
+@Composable
+fun DeviceCommContent(
+    state: UiState,
+    input: String,
+    logs: List<ConsoleLine>,
+    onInputChanged: (String) -> Unit,
+    onSubmit: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier) {
+        val colorScheme = colorScheme
+
+        ConsoleView(
+            lines = logs,
+            mapColor = {
+                when (it) {
+                    Line.TX -> colorScheme.primary
+                    Line.RX -> colorScheme.secondary
+                    Line.ERR -> colorScheme.error
+                    else -> error("unreachable!")
+                }
+            },
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .border(1.dp, colorScheme.surfaceBright, RoundedCornerShape(4.dp))
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextField(
+                value = if (state.connected) input else "Not Connected...",
+                enabled = state.connected,
+                onValueChange = onInputChanged,
+                modifier = Modifier.weight(1f),
+                singleLine = true
             )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            val enabled = state.connected && input.isNotEmpty()
+
+            val background = if (enabled) {
+                ButtonDefaults.buttonColors().containerColor
+            } else {
+                ButtonDefaults.buttonColors().disabledContainerColor
+            }
+
+            val foreground = if (enabled) {
+                ButtonDefaults.buttonColors().contentColor
+            } else {
+                ButtonDefaults.buttonColors().disabledContentColor
+            }
+
+            val height = TextFieldDefaults.MinHeight
+
+            IconButton(
+                onClick = onSubmit,
+                enabled = enabled,
+                modifier = Modifier
+                    .background(background, RoundedCornerShape(4.dp))
+                    .size(height),
+            ) {
+                Icon(Icons.AutoMirrored.Rounded.Send, "Send", tint = foreground)
+            }
         }
     }
 }
+
