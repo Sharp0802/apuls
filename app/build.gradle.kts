@@ -8,7 +8,7 @@ plugins {
 }
 
 tasks.register("populateCommands") {
-    val csvFile = file("$projectDir/src/main/res/codegen/commands.csv")
+    val csvFile = file("$projectDir/src/main/codegen/commands.csv")
     val outputDir = file("$projectDir/src/main/kotlin/com/apulsetech/apuls/command")
     val outputFile = File(outputDir, "Commands.kt")
 
@@ -114,6 +114,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.core)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.ui.text)
