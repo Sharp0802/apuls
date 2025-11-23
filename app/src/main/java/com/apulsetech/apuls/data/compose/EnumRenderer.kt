@@ -36,7 +36,8 @@ open class EnumRenderer<T : Enum<T>>(val entries: EnumEntries<T>) : IRenderer<T>
                 readOnly = true,
                 label = { Text("Fruit") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                modifier = Modifier.menuAnchor(
+                enabled = enabled,
+                modifier = modifier.menuAnchor(
                     if (enabled) {
                         ExposedDropdownMenuAnchorType.PrimaryEditable
                     } else {
@@ -56,7 +57,8 @@ open class EnumRenderer<T : Enum<T>>(val entries: EnumEntries<T>) : IRenderer<T>
                         onClick = {
                             expanded = false
                             onValueChanged(entry)
-                        }
+                        },
+                        enabled = enabled
                     )
                 }
             }
