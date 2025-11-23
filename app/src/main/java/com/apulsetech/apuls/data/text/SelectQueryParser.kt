@@ -9,7 +9,7 @@ class SelectQueryParser : IParser<SelectQuery> {
         val buffer = UIntArray(3)
 
         var begin = 0
-        (0..2).forEach { _ ->
+        (0..2).forEach { j ->
             val i = text.indexOf(' ', begin).let {
                 when (it) {
                     -1 -> text.length
@@ -18,7 +18,7 @@ class SelectQueryParser : IParser<SelectQuery> {
             }
 
             // TODO : is mask hexadecimal-encoded?
-            buffer[i] = text.slice(begin until i).toUIntOrNull()
+            buffer[j] = text.slice(begin until i).toUIntOrNull()
                 ?: throw ParseException("Malformed select query segment", begin)
 
             if (i == 0 && buffer[i] > 4u) {
