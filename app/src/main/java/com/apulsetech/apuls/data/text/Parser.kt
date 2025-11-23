@@ -1,5 +1,6 @@
 package com.apulsetech.apuls.data.text
 
+import com.apulsetech.apuls.command.CommandParser
 import java.text.ParseException
 import kotlin.jvm.Throws
 import kotlin.reflect.KClass
@@ -35,6 +36,8 @@ object Parser {
         register(TagReportModeParser())
         register(TcpModeParser())
         register(WriteOpParser())
+
+        register(CommandParser())
     }
 
     @Suppress("UNCHECKED_CAST")
