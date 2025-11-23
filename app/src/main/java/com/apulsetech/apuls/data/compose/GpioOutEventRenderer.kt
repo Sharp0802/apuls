@@ -31,7 +31,7 @@ class GpioOutEventRenderer(override val singleLine: Boolean = false) : Renderer<
                 enabled = enabled
             )
 
-            Spacer(Modifier.Companion.width(8.dp))
+            Spacer(Modifier.width(8.dp))
 
             OutlinedTextField(
                 value = value.time.toString(),
@@ -42,11 +42,11 @@ class GpioOutEventRenderer(override val singleLine: Boolean = false) : Renderer<
                     }
                 },
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Companion.Decimal
+                    keyboardType = KeyboardType.Decimal
                 ),
                 singleLine = true,
                 enabled = enabled,
-                modifier = Modifier.Companion.weight(1f)
+                modifier = Modifier.weight(1f)
             )
         }
     }

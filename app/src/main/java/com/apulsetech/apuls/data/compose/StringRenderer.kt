@@ -67,6 +67,7 @@ class StringRenderer(override val singleLine: Boolean = true) : Renderer<String>
                     )
                 }
             },
+            enabled = enabled,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
         )
     }

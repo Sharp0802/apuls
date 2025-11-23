@@ -13,6 +13,7 @@ object Renderers {
         register(AccessRenderer())
         register(AliveModeRenderer())
         register(BaudrateRenderer())
+        register(BooleanRenderer())
         register(GpioInEventRenderer())
         register(GpioOutEventRenderer())
         register(IntRenderer())

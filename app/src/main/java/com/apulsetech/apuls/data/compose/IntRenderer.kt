@@ -72,6 +72,7 @@ class IntRenderer(override val singleLine: Boolean = true) : Renderer<Int>() {
                     )
                 }
             },
+            enabled = enabled,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
         )
     }
