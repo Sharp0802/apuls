@@ -39,7 +39,7 @@ open class EnumRenderer<T : Enum<T>>(
                 value = value.toString(),
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Fruit") },
+                label = { },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 enabled = enabled,
                 modifier = modifier.menuAnchor(
