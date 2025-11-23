@@ -15,10 +15,10 @@ Tag,read,Read,ReadOp,,
 Tag,write,Write,WriteOp,,
 Tag,lock,Lock,LockOp,,
 Tag,kill,Kill,String,,
-Reader,state,Retrieve State,String,,readonly
+Reader,state,State,String,,readonly
 Reader,auto,Enable Auto Command,Boolean,,
 Reader,autocmd,Auto Command,String,,
-Reader,alivetime,Enable Heartbeat,Int,range(0..86400),
+Reader,alivetime,Heartbeat Trigger,Int,range(0..86400),
 Reader,alive,Heartbeat,,,
 Reader,alivemode,Cardiac Arrest Behaviour,AliveMode,,
 Reader,rfmode,Reader Mode,Int,,
