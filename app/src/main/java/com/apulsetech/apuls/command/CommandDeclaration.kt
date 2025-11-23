@@ -30,6 +30,8 @@ open class ParameterizedCommandDeclaration(
         return parsed
     }
 
+    fun getter(): String = build() /* just for semantics */
+
     fun setter(state: Any): String = ":$name $state"
 }
 
