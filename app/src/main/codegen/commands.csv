@@ -24,7 +24,7 @@ Reader,alivemode,Cardiac Arrest Behaviour,AliveMode,,
 Reader,rfmode,Reader Mode,Int,,
 Reader,dual,Enable Dual Target,Boolean,,
 Reader,session,Tag Session,Int,range(0..3),
-Reader,accesspwd,Access Password,Unknown,,
+# Reader,accesspwd,Access Password,Unknown,,
 Antenna,ant1,Enable,Boolean,,
 Antenna,ant2,Enable,Boolean,,
 Antenna,ant3,Enable,Boolean,,
@@ -79,17 +79,17 @@ GPIO-out,out2event,Event,GpioOutEvent,,
 GPIO-out,out3event,Event,GpioOutEvent,,
 GPIO-out,out4event,Event,GpioOutEvent,,
 Misc,buzz,Enable buzz,Boolean,,
-System,version,Firmware Version,String,,
-System,fwtype,Firmware Type,String,,
-System,rid,Reader ID,Int,,
-System,model,Reader Name,String,,
-System,region,Reader Region,Int,,
-System,date,Reader System Date,String,,
+System,version,Firmware Version,String,,readonly
+System,fwtype,Firmware Type,String,,readonly
+System,rid,Reader ID,Int,,readonly
+System,model,Reader Name,String,,readonly
+System,region,Reader Region,Int,,readonly
+System,date,Reader System Date,String,,readonly
 System,default,Reset Configuration as default,Int,,
 System,reboot,Reboot,,,
-System,CPU,,Unknown,,
-System,debug,,Unknown,,
-System,serialno,Reader Serial No,String,,
+# System,CPU,,Unknown,,
+# System,debug,,Unknown,,
+System,serialno,Reader Serial No,String,,readonly
 Serve,ser_serial,Serve Serial,Boolean,,
 Serve,ser_tcp,Serve Tcp,Boolean,,
 Serve,ser_http,Serve Http,Boolean,,
