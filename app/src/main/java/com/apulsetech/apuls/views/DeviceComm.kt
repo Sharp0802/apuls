@@ -64,6 +64,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.text.ParseException
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 object Line {
     const val TX = 0
@@ -92,6 +94,8 @@ class DeviceCommViewModel : ViewModel() {
 
     private var openJob: Job? = null
     private var socket: DeviceSocket? = null
+
+    private val txLock = ReentrantLock()
 
     var callbacks = CopyOnWriteArrayList<(Command) -> Unit>()
 
@@ -135,7 +139,7 @@ class DeviceCommViewModel : ViewModel() {
             }
 
             val lineBuffer = mutableListOf<Byte>()
-            val readBuffer = ByteArray(8192)
+            val readBuffer = ByteArray(16384)
 
             while (isActive) {
                 val read = socket.read(readBuffer)
@@ -182,7 +186,10 @@ class DeviceCommViewModel : ViewModel() {
     fun send(line: String) {
         val socket = socket ?: return
 
-        socket.write((line + "\r\n").toByteArray())
+        txLock.withLock {
+            socket.write((line + "\r\n").toByteArray())
+        }
+
         _logs.add(ConsoleLine(line, Line.TX))
     }
 
@@ -263,10 +270,12 @@ fun DeviceCommView(
                     title = "Settings"
                     BackHandler(true) { }
 
-                    Settings(
-                        comm = vm,
-                        modifier = Modifier.verticalScroll(rememberScrollState())
-                    )
+                    if (state.connected) {
+                        Settings(
+                            comm = vm,
+                            modifier = Modifier.verticalScroll(rememberScrollState())
+                        )
+                    }
                 }
 
                 composable("terminal") {
