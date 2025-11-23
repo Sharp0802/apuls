@@ -52,7 +52,7 @@ class SettingViewModel(
         loadJob = viewModelScope.launch(Dispatchers.IO) {
             var callback: ((Command) -> Unit)? = null
             callback = {
-                if (it.declaration == declaration) {
+                if (it.declaration.name == declaration.name) {
                     _state.value = _state.value.copy(value = it.state)
                     comm.callbacks.remove(callback)
                 }
@@ -91,7 +91,7 @@ fun Setting(vm: SettingViewModel, modifier: Modifier = Modifier) {
         Row(modifier, verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = vm.declaration.label,
-                modifier = Modifier.width(150.dp)
+                modifier = Modifier.width(196.dp)
             )
             Spacer(Modifier.width(8.dp))
             SettingContent(vm, renderer, Modifier.weight(1f))
