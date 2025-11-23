@@ -25,8 +25,10 @@ tasks.register("populateCommands") {
         content.append("@file:Suppress(\"EnumEntryName\", \"SpellCheckingInspection\", \"unused\")\n\n")
         content.append("package com.apulsetech.apuls.command\n\n")
         content.append("import com.apulsetech.apuls.data.*\n\n")
-        content.append("enum class CommandDeclarations(value: CommandDeclaration) {\n")
+        content.append("enum class CommandDeclarations(val value: CommandDeclaration) {\n")
 
+        val cmd = mutableListOf<String>()
+        val pCmd = mutableListOf<String>()
         csvFile.forEachLine { line ->
             val parts = line.split(",")
             if (parts.size < 5) {
@@ -40,13 +42,22 @@ tasks.register("populateCommands") {
             val constraint = parts[4].trim()
 
             val declaration = if (type.isEmpty()) {
+                cmd.add(name)
                 "    $name(CommandDeclaration(\"$name\", \"$label\")),\n"
             } else {
+                pCmd.add(name)
                 "    $name(CommandDeclaration.parameterized<$type>(\"$name\", \"$label\", arrayOf($constraint))),\n"
             }
 
             content.append(declaration)
         }
+
+        content.append("    ;\n")
+
+        content.append("    companion object {\n")
+        content.append("        val commands = arrayOf(${cmd.joinToString(", ") { v -> "$v.value" }})\n")
+        content.append("        val parameterizedCommands = arrayOf(${pCmd.joinToString(", ") { v -> "$v.value as ParameterizedCommandDeclaration" }})\n")
+        content.append("    }\n")
 
         content.append("}\n")
 

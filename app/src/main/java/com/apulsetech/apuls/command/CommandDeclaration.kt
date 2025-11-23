@@ -11,6 +11,8 @@ open class CommandDeclaration(val name: String, val label: String) {
         ): TypeParameterizedCommandDeclaration<T> =
             TypeParameterizedCommandDeclaration<T>(name, label, constraints)
     }
+
+    fun build(): String = ":$name"
 }
 
 open class ParameterizedCommandDeclaration(
@@ -27,6 +29,8 @@ open class ParameterizedCommandDeclaration(
 
         return parsed
     }
+
+    fun setter(state: Any): String = ":$name $state"
 }
 
 class TypeParameterizedCommandDeclaration<T : Any>(
@@ -38,4 +42,6 @@ class TypeParameterizedCommandDeclaration<T : Any>(
         ): TypeParameterizedCommandDeclaration<T> =
             TypeParameterizedCommandDeclaration(name, label, constraints, T::class)
     }
+
+    fun typedSetter(state: T): String = ":$name $state"
 }
