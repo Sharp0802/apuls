@@ -14,12 +14,12 @@ import com.apulsetech.apuls.data.Access
 import com.apulsetech.apuls.data.LockOp
 import com.apulsetech.apuls.data.Mask
 
-class LockOpRenderer : IRenderer<LockOp> {
+class LockOpRenderer(override val singleLine: Boolean = false) : Renderer<LockOp>() {
     private val maskRenderer = MaskRenderer()
     private val accessRenderer = AccessRenderer()
 
     @Composable
-    override fun Render(
+    override fun TypedRender(
         value: LockOp,
         constraints: Array<IConstraint>,
         onValueChanged: (LockOp) -> Unit,
@@ -70,7 +70,7 @@ class LockOpRenderer : IRenderer<LockOp> {
 
             Spacer(Modifier.width(8.dp))
 
-            maskRenderer.Render(
+            maskRenderer.TypedRender(
                 value = pair.first,
                 constraints = emptyArray(),
                 onValueChanged = { onPairChanged(Pair(it, pair.second)) },
@@ -80,7 +80,7 @@ class LockOpRenderer : IRenderer<LockOp> {
 
             Spacer(Modifier.width(8.dp))
 
-            accessRenderer.Render(
+            accessRenderer.TypedRender(
                 value = pair.second,
                 constraints = emptyArray(),
                 onValueChanged = { onPairChanged(Pair(pair.first, it)) },

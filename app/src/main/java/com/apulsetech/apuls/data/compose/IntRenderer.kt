@@ -13,7 +13,7 @@ import com.apulsetech.apuls.command.IConstraint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class IntRenderer : IRenderer<Int> {
+class IntRenderer(override val singleLine: Boolean = true) : Renderer<Int>() {
     data class State(
         val value: Int? = null,
         val error: String? = null
@@ -23,7 +23,7 @@ class IntRenderer : IRenderer<Int> {
     private val state = _state.asStateFlow()
 
     @Composable
-    override fun Render(
+    override fun TypedRender(
         value: Int,
         constraints: Array<IConstraint>,
         onValueChanged: (Int) -> Unit,

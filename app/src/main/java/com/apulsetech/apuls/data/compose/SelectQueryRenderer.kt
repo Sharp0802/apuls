@@ -12,9 +12,9 @@ import androidx.compose.ui.unit.dp
 import com.apulsetech.apuls.command.IConstraint
 import com.apulsetech.apuls.data.SelectQuery
 
-class SelectQueryRenderer : IRenderer<SelectQuery> {
+class SelectQueryRenderer(override val singleLine: Boolean = false) : Renderer<SelectQuery>() {
     @Composable
-    override fun Render(
+    override fun TypedRender(
         value: SelectQuery,
         constraints: Array<IConstraint>,
         onValueChanged: (SelectQuery) -> Unit,

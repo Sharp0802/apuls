@@ -13,9 +13,9 @@ import androidx.compose.ui.unit.dp
 import com.apulsetech.apuls.command.IConstraint
 import com.apulsetech.apuls.data.GpioInEvent
 
-class GpioInEventRenderer : IRenderer<GpioInEvent> {
+class GpioInEventRenderer(override val singleLine: Boolean = false) : Renderer<GpioInEvent>() {
     @Composable
-    override fun Render(
+    override fun TypedRender(
         value: GpioInEvent,
         constraints: Array<IConstraint>,
         onValueChanged: (GpioInEvent) -> Unit,

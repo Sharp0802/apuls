@@ -12,9 +12,9 @@ import androidx.compose.ui.unit.dp
 import com.apulsetech.apuls.command.IConstraint
 import com.apulsetech.apuls.data.WriteOp
 
-class WriteOpRenderer : IRenderer<WriteOp> {
+class WriteOpRenderer(override val singleLine: Boolean = false) : Renderer<WriteOp>() {
     @Composable
-    override fun Render(
+    override fun TypedRender(
         value: WriteOp,
         constraints: Array<IConstraint>,
         onValueChanged: (WriteOp) -> Unit,

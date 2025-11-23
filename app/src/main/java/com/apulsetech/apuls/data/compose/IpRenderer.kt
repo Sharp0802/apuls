@@ -13,9 +13,9 @@ import androidx.compose.ui.unit.dp
 import com.apulsetech.apuls.command.IConstraint
 import com.apulsetech.apuls.data.Ip
 
-class IpRenderer : IRenderer<Ip> {
+class IpRenderer(override val singleLine: Boolean = false) : Renderer<Ip>() {
     @Composable
-    override fun Render(
+    override fun TypedRender(
         value: Ip,
         constraints: Array<IConstraint>,
         onValueChanged: (Ip) -> Unit,

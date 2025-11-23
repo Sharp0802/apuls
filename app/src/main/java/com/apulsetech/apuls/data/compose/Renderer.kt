@@ -1,34 +1,30 @@
 package com.apulsetech.apuls.data.compose
 
-import kotlin.reflect.KClass
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import com.apulsetech.apuls.command.IConstraint
 
-object Renderer {
-    private val map = mutableMapOf<KClass<*>, IRenderer<*>>()
+abstract class Renderer<T> {
+    abstract val singleLine: Boolean
 
-    private inline fun <reified T : Any> register(renderer: IRenderer<T>) {
-        map[T::class] = renderer
-    }
+    @Composable
+    abstract fun TypedRender(
+        value: T,
+        constraints: Array<IConstraint>,
+        onValueChanged: (T) -> Unit,
+        enabled: Boolean,
+        modifier: Modifier = Modifier
+    )
 
-    init {
-        register(AccessRenderer())
-        register(AliveModeRenderer())
-        register(BaudrateRenderer())
-        register(GpioInEventRenderer())
-        register(GpioOutEventRenderer())
-        register(IntRenderer())
-        register(IpRenderer())
-        register(LockOpRenderer())
-        register(MaskRenderer())
-        register(MqttQoSRenderer())
-        register(SelectQueryRenderer())
-        register(StringRenderer())
-        register(TagReportModeRenderer())
-        register(TcpModeRenderer())
-        register(WriteOpRenderer())
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    fun <T : Any> of(type: KClass<T>): IRenderer<T> {
-        return map[type] as? IRenderer<T> ?: error("No renderer registered for ${type.qualifiedName}")
+    @Composable
+    fun Render(
+        value: Any,
+        constraints: Array<IConstraint>,
+        onValueChanged: (Any) -> Unit,
+        enabled: Boolean,
+        modifier: Modifier = Modifier
+    ) {
+        @Suppress("UNCHECKED_CAST")
+        TypedRender(value as T, constraints, { onValueChanged(it as Any) }, enabled, modifier)
     }
 }

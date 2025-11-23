@@ -16,10 +16,13 @@ import androidx.compose.ui.Modifier
 import com.apulsetech.apuls.command.IConstraint
 import kotlin.enums.EnumEntries
 
-open class EnumRenderer<T : Enum<T>>(val entries: EnumEntries<T>) : IRenderer<T> {
+open class EnumRenderer<T : Enum<T>>(
+    val entries: EnumEntries<T>,
+    override val singleLine: Boolean = true
+) : Renderer<T>() {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    override fun Render(
+    override fun TypedRender(
         value: T,
         constraints: Array<IConstraint>,
         onValueChanged: (T) -> Unit,
