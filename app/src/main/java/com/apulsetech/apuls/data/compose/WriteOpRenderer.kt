@@ -9,12 +9,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.apulsetech.apuls.command.IConstraint
 import com.apulsetech.apuls.data.WriteOp
 
 class WriteOpRenderer : IRenderer<WriteOp> {
     @Composable
     override fun Render(
         value: WriteOp,
+        constraints: Array<IConstraint>,
         onValueChanged: (WriteOp) -> Unit,
         enabled: Boolean,
         modifier: Modifier

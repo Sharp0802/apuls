@@ -9,6 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.apulsetech.apuls.command.IConstraint
 import com.apulsetech.apuls.data.Access
 import com.apulsetech.apuls.data.LockOp
 import com.apulsetech.apuls.data.Mask
@@ -20,6 +21,7 @@ class LockOpRenderer : IRenderer<LockOp> {
     @Composable
     override fun Render(
         value: LockOp,
+        constraints: Array<IConstraint>,
         onValueChanged: (LockOp) -> Unit,
         enabled: Boolean,
         modifier: Modifier
@@ -70,6 +72,7 @@ class LockOpRenderer : IRenderer<LockOp> {
 
             maskRenderer.Render(
                 value = pair.first,
+                constraints = emptyArray(),
                 onValueChanged = { onPairChanged(Pair(it, pair.second)) },
                 enabled = enabled,
                 modifier = Modifier.weight(1f)
@@ -79,6 +82,7 @@ class LockOpRenderer : IRenderer<LockOp> {
 
             accessRenderer.Render(
                 value = pair.second,
+                constraints = emptyArray(),
                 onValueChanged = { onPairChanged(Pair(pair.first, it)) },
                 enabled = enabled,
                 modifier = Modifier.weight(1f)

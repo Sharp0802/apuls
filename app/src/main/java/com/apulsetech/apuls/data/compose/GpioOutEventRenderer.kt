@@ -10,12 +10,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.apulsetech.apuls.command.IConstraint
 import com.apulsetech.apuls.data.GpioOutEvent
 
 class GpioOutEventRenderer : IRenderer<GpioOutEvent> {
     @Composable
     override fun Render(
         value: GpioOutEvent,
+        constraints: Array<IConstraint>,
         onValueChanged: (GpioOutEvent) -> Unit,
         enabled: Boolean,
         modifier: Modifier

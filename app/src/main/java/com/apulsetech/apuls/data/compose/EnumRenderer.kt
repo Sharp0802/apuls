@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.apulsetech.apuls.command.IConstraint
 import kotlin.enums.EnumEntries
 
 open class EnumRenderer<T : Enum<T>>(val entries: EnumEntries<T>) : IRenderer<T> {
@@ -20,6 +21,7 @@ open class EnumRenderer<T : Enum<T>>(val entries: EnumEntries<T>) : IRenderer<T>
     @Composable
     override fun Render(
         value: T,
+        constraints: Array<IConstraint>,
         onValueChanged: (T) -> Unit,
         enabled: Boolean,
         modifier: Modifier
