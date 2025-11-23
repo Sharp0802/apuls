@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.CellTower
@@ -50,8 +52,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.apulsetech.apuls.command.Command
 import com.apulsetech.apuls.data.text.parse
+import com.apulsetech.apuls.device.BluetoothDeviceSocket
 import com.apulsetech.apuls.device.Device
 import com.apulsetech.apuls.device.DeviceSocket
+import com.apulsetech.apuls.device.UsbDeviceSocket
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,6 +75,11 @@ data class UiState(
     val state: String = "", val connected: Boolean = false, val loading: Boolean = false
 )
 
+enum class ConnectionType {
+    Usb,
+    Bluetooth,
+}
+
 class DeviceCommViewModel : ViewModel() {
     private val _state = MutableStateFlow(UiState())
     val state = _state.asStateFlow()
@@ -85,6 +94,15 @@ class DeviceCommViewModel : ViewModel() {
     private var socket: DeviceSocket? = null
 
     var callbacks = CopyOnWriteArrayList<(Command) -> Unit>()
+
+    val connectionType: ConnectionType
+        get() {
+            return when (socket) {
+                is BluetoothDeviceSocket -> ConnectionType.Bluetooth
+                is UsbDeviceSocket -> ConnectionType.Usb
+                else -> error("unreachable!")
+            }
+        }
 
     fun open(device: Device) {
         openJob = viewModelScope.launch(Dispatchers.IO) {
@@ -245,7 +263,10 @@ fun DeviceCommView(
                     title = "Settings"
                     BackHandler(true) { }
 
-                    // TODO
+                    Settings(
+                        comm = vm,
+                        modifier = Modifier.verticalScroll(rememberScrollState())
+                    )
                 }
 
                 composable("terminal") {

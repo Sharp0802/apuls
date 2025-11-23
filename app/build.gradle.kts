@@ -30,6 +30,10 @@ tasks.register("populateCommands") {
         val cmd = mutableListOf<String>()
         val pCmd = mutableListOf<String>()
         csvFile.forEachLine { line ->
+            if (line.startsWith("#")) {
+                return@forEachLine
+            }
+
             val parts = line.split(",")
             if (parts.size < 5) {
                 return@forEachLine
@@ -40,13 +44,14 @@ tasks.register("populateCommands") {
             val label = parts[2].trim()
             val type = parts[3].trim()
             val constraint = parts[4].trim()
+            val readonly = parts[5].trim() == "readonly"
 
             val declaration = if (type.isEmpty()) {
                 cmd.add(name)
                 "    $name(CommandDeclaration(\"$name\", \"$label\")),\n"
             } else {
                 pCmd.add(name)
-                "    $name(CommandDeclaration.parameterized<$type>(\"$name\", \"$label\", arrayOf($constraint))),\n"
+                "    $name(CommandDeclaration.parameterized<$type>(\"$name\", \"$label\", $readonly, arrayOf($constraint))),\n"
             }
 
             content.append(declaration)
