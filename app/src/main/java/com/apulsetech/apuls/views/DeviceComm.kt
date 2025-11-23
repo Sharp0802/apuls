@@ -48,6 +48,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.apulsetech.apuls.command.Command
+import com.apulsetech.apuls.data.text.parse
 import com.apulsetech.apuls.device.Device
 import com.apulsetech.apuls.device.DeviceSocket
 import kotlinx.coroutines.Dispatchers
@@ -56,6 +58,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.text.ParseException
+import java.util.concurrent.CopyOnWriteArrayList
 
 object Line {
     const val TX = 0
@@ -79,6 +83,8 @@ class DeviceCommViewModel : ViewModel() {
 
     private var openJob: Job? = null
     private var socket: DeviceSocket? = null
+
+    var callbacks = CopyOnWriteArrayList<(Command) -> Unit>()
 
     fun open(device: Device) {
         openJob = viewModelScope.launch(Dispatchers.IO) {
@@ -137,6 +143,22 @@ class DeviceCommViewModel : ViewModel() {
 
     private fun onReceived(line: String) {
         _logs.add(ConsoleLine(line, Line.RX))
+
+        val com: Command = try {
+            line.parse()
+        } catch (e: ParseException) {
+            _logs.add(ConsoleLine("error: ${e.message}", Line.ERR))
+            return
+        }
+
+        for (callback in callbacks) {
+            try {
+                callback(com)
+            } catch (t: Throwable) {
+                Log.e("DeviceComm", "Error thrown in callback", t)
+                _logs.add(ConsoleLine("error: ${t.message}", Line.ERR))
+            }
+        }
     }
 
     fun send(line: String) {
