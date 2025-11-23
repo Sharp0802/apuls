@@ -4,28 +4,28 @@ interface IConstraint {
     fun validate(v: Any): Boolean
 }
 
-fun range(range: IntRange): IConstraint {
-    class Impl : IConstraint {
-        override fun validate(v: Any): Boolean {
-            return when (v) {
-                is Int -> v in range
-                else -> false
-            }
-        }
+class RangeConstraint(val range: IntRange) : IConstraint {
+    override fun validate(v: Any): Boolean = when (v) {
+        is Int -> v in range
+        else -> false
     }
 
-    return Impl()
+    override fun toString(): String = "must be in ${range.first}..${range.last}"
+}
+
+fun range(range: IntRange): IConstraint {
+    return RangeConstraint(range)
+}
+
+class SizedConstraint(val max: Int) : IConstraint {
+    override fun validate(v: Any): Boolean = when (v) {
+        is String -> v.length <= max
+        else -> false
+    }
+
+    override fun toString(): String = "length must be in 0..$max"
 }
 
 fun sized(max: Int): IConstraint {
-    class Impl : IConstraint {
-        override fun validate(v: Any): Boolean {
-            return when (v) {
-                is String -> v.length <= max
-                else -> false
-            }
-        }
-    }
-
-    return Impl()
+    return SizedConstraint(max)
 }
