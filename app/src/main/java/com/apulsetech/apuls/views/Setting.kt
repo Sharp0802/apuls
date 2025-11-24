@@ -30,7 +30,8 @@ import kotlinx.coroutines.launch
 
 class SettingViewModel(
     val comm: DeviceCommViewModel,
-    val declaration: ParameterizedCommandDeclaration
+    val declaration: ParameterizedCommandDeclaration,
+    val renderer: Renderer<*> = Renderers.of(declaration.type)
 ) : ViewModel() {
     data class State(
         val value: Any? = null
@@ -83,36 +84,34 @@ class SettingViewModel(
 
 @Composable
 fun Setting(vm: SettingViewModel, modifier: Modifier = Modifier) {
-    val renderer by remember { mutableStateOf(Renderers.of(vm.declaration.type)) }
-
     vm.load()
 
-    if (renderer.singleLine) {
+    if (vm.renderer.singleLine) {
         Row(modifier, verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = vm.declaration.label,
                 modifier = Modifier.width(196.dp)
             )
             Spacer(Modifier.width(8.dp))
-            SettingContent(vm, renderer, Modifier.weight(1f))
+            SettingContent(vm, Modifier.weight(1f))
         }
     } else {
         Column(modifier) {
             Text(vm.declaration.label)
             Spacer(Modifier.height(8.dp))
-            SettingContent(vm, renderer, Modifier.weight(1f))
+            SettingContent(vm, Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-private fun SettingContent(vm: SettingViewModel, renderer: Renderer<*>, modifier: Modifier) {
+private fun SettingContent(vm: SettingViewModel, modifier: Modifier) {
     val state by vm.state.collectAsState()
 
     if (state.value == null) {
         LinearProgressIndicator(modifier)
     } else {
-        renderer.Render(
+        vm.renderer.Render(
             value = state.value!!,
             vm.declaration.constraints,
             onValueChanged = {
