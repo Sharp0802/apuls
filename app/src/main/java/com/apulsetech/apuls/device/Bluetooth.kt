@@ -71,6 +71,10 @@ internal class BluetoothDeviceSocket(inner: BluetoothSocket) : DeviceSocket() {
 
     override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
         return try {
+            if (_input.available() == 0) {
+                return 0
+            }
+
             _input.read(buffer, offset, length)
         } catch (t: Throwable) {
             Log.e("BluetoothDevice", "IO error during reading", t)
