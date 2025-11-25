@@ -36,7 +36,13 @@ open class ParameterizedCommandDeclaration(
 
     fun getter(): String = build() /* just for semantics */
 
-    fun setter(state: Any): String = ":$name $state"
+    fun setter(state: Any): String {
+        return if (state is Boolean) {
+            ":$name ${if (state) "1" else "0"}"
+        } else {
+            ":$name $state"
+        }
+    }
 }
 
 class TypeParameterizedCommandDeclaration<T : Any>(
