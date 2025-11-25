@@ -1,33 +1,6 @@
-package com.apulsetech.apuls.views
+package com.apulsetech.apuls.view
 
-import android.util.Log
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.apulsetech.apuls.command.Command
-import com.apulsetech.apuls.command.ParameterizedCommandDeclaration
-import com.apulsetech.apuls.data.compose.Renderer
-import com.apulsetech.apuls.data.compose.Renderers
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-
+/*
 class SettingViewModel(
     val comm: DeviceCommViewModel,
     val declaration: ParameterizedCommandDeclaration,
@@ -122,3 +95,4 @@ private fun SettingContent(vm: SettingViewModel, modifier: Modifier) {
         )
     }
 }
+*/

@@ -1,4 +1,4 @@
-package com.apulsetech.apuls.views
+package com.apulsetech.apuls.view
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn

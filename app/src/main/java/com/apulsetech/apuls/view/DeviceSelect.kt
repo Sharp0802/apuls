@@ -1,4 +1,4 @@
-package com.apulsetech.apuls.views
+package com.apulsetech.apuls.view
 
 import android.Manifest
 import android.app.Application

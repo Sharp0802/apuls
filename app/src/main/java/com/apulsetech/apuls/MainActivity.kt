@@ -12,9 +12,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.apulsetech.apuls.ui.theme.ApulsTheme
-import com.apulsetech.apuls.views.DeviceCommView
-import com.apulsetech.apuls.views.DeviceSelectView
-import com.apulsetech.apuls.views.DeviceSelectViewModel
+import com.apulsetech.apuls.view.DeviceCommView
+import com.apulsetech.apuls.view.DeviceSelectView
+import com.apulsetech.apuls.view.DeviceSelectViewModel
 
 private const val ROUTE_DEVICE_SELECT = "device_select"
 private const val ROUTE_DEVICE_COMM = "device_comm"

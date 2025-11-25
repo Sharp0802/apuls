@@ -9,6 +9,7 @@ import com.apulsetech.apuls.collection.ObservableRingBuffer
 import com.apulsetech.apuls.device.Device
 import com.apulsetech.apuls.device.DeviceSession
 import com.apulsetech.apuls.device.DeviceSocket
+import com.apulsetech.apuls.view.ConsoleLine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -26,11 +27,11 @@ data class UiState(
 private class Session(
     socket: DeviceSocket, scope: CoroutineScope, val dispose: suspend () -> Unit
 ) : DeviceSession(socket, scope) {
-    val channel = Channel<com.apulsetech.apuls.views.ConsoleLine>(capacity = 4096)
+    val channel = Channel<ConsoleLine>(capacity = 4096)
 
     override suspend fun onReceived(line: String) {
         channel.send(
-            _root_ide_package_.com.apulsetech.apuls.views.ConsoleLine(
+            ConsoleLine(
                 line,
                 DeviceCommViewModel.RX
             )
@@ -53,7 +54,7 @@ class DeviceCommViewModel(device: Device) : ViewModel() {
         const val ERR = 2
     }
 
-    val logs = ObservableRingBuffer<com.apulsetech.apuls.views.ConsoleLine>(LOGS_MAX_LINE)
+    val logs = ObservableRingBuffer<ConsoleLine>(LOGS_MAX_LINE)
 
     var state by mutableStateOf(UiState())
         private set
@@ -82,7 +83,7 @@ class DeviceCommViewModel(device: Device) : ViewModel() {
 
         state = UiState("Connected", connected = true)
 
-        val buffer = ArrayList<com.apulsetech.apuls.views.ConsoleLine>(LOGS_BATCH)
+        val buffer = ArrayList<ConsoleLine>(LOGS_BATCH)
 
         fun flush() {
             buffer.forEach {
@@ -115,7 +116,7 @@ class DeviceCommViewModel(device: Device) : ViewModel() {
 
         session.send(line)
         // send should called in main context
-        logs.write(_root_ide_package_.com.apulsetech.apuls.views.ConsoleLine(line, TX))
+        logs.write(ConsoleLine(line, TX))
     }
 
     override fun onCleared() {

@@ -1,4 +1,4 @@
-package com.apulsetech.apuls.views
+package com.apulsetech.apuls.view
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
@@ -36,10 +36,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.apulsetech.apuls.device.Device
-import com.apulsetech.apuls.device.DeviceSession
-import com.apulsetech.apuls.device.DeviceSocket
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.channels.Channel
+import com.apulsetech.apuls.viewmodel.DeviceCommViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,11 +44,11 @@ fun DeviceCommView(device: Device) {
     val nav = rememberNavController()
     var title by rememberSaveable { mutableStateOf("") }
 
-    val vm: com.apulsetech.apuls.viewmodel.DeviceCommViewModel = viewModel(
+    val vm: DeviceCommViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return _root_ide_package_.com.apulsetech.apuls.viewmodel.DeviceCommViewModel(device) as T
+                return DeviceCommViewModel(device) as T
             }
         }
     )

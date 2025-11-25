@@ -1,4 +1,4 @@
-package com.apulsetech.apuls.views
+package com.apulsetech.apuls.view
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.apulsetech.apuls.collection.ObservableRingBuffer
+import com.apulsetech.apuls.viewmodel.DeviceCommViewModel
 
 @Composable
 fun TerminalView(
@@ -40,9 +41,9 @@ fun TerminalView(
             lines = logs,
             mapColor = {
                 when (it) {
-                    _root_ide_package_.com.apulsetech.apuls.viewmodel.DeviceCommViewModel.TX -> colorScheme.primary
-                    _root_ide_package_.com.apulsetech.apuls.viewmodel.DeviceCommViewModel.RX -> colorScheme.secondary
-                    _root_ide_package_.com.apulsetech.apuls.viewmodel.DeviceCommViewModel.ERR -> colorScheme.error
+                    DeviceCommViewModel.TX -> colorScheme.primary
+                    DeviceCommViewModel.RX -> colorScheme.secondary
+                    DeviceCommViewModel.ERR -> colorScheme.error
                     else -> error("unreachable!")
                 }
             },
