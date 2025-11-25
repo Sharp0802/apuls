@@ -24,10 +24,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.apulsetech.apuls.collection.ObservableRingBuffer
 import com.apulsetech.apuls.viewmodel.DeviceCommViewModel
+import com.apulsetech.apuls.viewmodel.UiState
 
 @Composable
 fun TerminalView(
-    state: com.apulsetech.apuls.viewmodel.UiState,
+    state: UiState,
     input: String,
     logs: ObservableRingBuffer<ConsoleLine>,
     onInputChanged: (String) -> Unit,

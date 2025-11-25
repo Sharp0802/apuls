@@ -35,6 +35,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.apulsetech.apuls.command.CommandDeclarations
+import com.apulsetech.apuls.command.TypeParameterizedCommandDeclaration
 import com.apulsetech.apuls.device.Device
 import com.apulsetech.apuls.viewmodel.DeviceCommViewModel
 
@@ -44,14 +46,12 @@ fun DeviceCommView(device: Device) {
     val nav = rememberNavController()
     var title by rememberSaveable { mutableStateOf("") }
 
-    val vm: DeviceCommViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return DeviceCommViewModel(device) as T
-            }
+    val vm: DeviceCommViewModel = viewModel(factory = object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return DeviceCommViewModel(device) as T
         }
-    )
+    })
 
     Scaffold(topBar = {
         TopAppBar(title = { Text(title) }, actions = {
@@ -107,13 +107,32 @@ fun DeviceCommView(device: Device) {
                             vm.send(vm.input)
                             vm.input = ""
                         },
-                        modifier = Modifier.padding(padding).fillMaxSize()
+                        modifier = Modifier
+                            .padding(padding)
+                            .fillMaxSize()
                     )
                 }
 
                 composable("inventory") {
                     title = "Inventory"
                     BackHandler(true) { }
+
+                    InventoryView(
+                        tags = vm.tags.values,
+                        modifier = Modifier
+                            .padding(padding)
+                            .fillMaxSize(),
+                        onStart = {
+                            vm.send(CommandDeclarations.inventory.value.build())
+                        },
+                        onStop = {
+                            @Suppress("UNCHECKED_CAST") val command =
+                                CommandDeclarations.stop.value as TypeParameterizedCommandDeclaration<String>
+                            vm.send(command.setter("inventory"))
+                        },
+                        onClear = {
+                            vm.tags.clear()
+                        })
                 }
             }
         }

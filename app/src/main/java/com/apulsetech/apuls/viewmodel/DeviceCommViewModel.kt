@@ -1,11 +1,17 @@
 package com.apulsetech.apuls.viewmodel
 
+import android.util.Log
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.apulsetech.apuls.collection.ObservableRingBuffer
+import com.apulsetech.apuls.command.Command
+import com.apulsetech.apuls.command.CommandDeclarations
+import com.apulsetech.apuls.data.Tag
+import com.apulsetech.apuls.data.text.parse
 import com.apulsetech.apuls.device.Device
 import com.apulsetech.apuls.device.DeviceSession
 import com.apulsetech.apuls.device.DeviceSocket
@@ -25,7 +31,10 @@ data class UiState(
 )
 
 private class Session(
-    socket: DeviceSocket, scope: CoroutineScope, val dispose: suspend () -> Unit
+    socket: DeviceSocket,
+    scope: CoroutineScope,
+    val receive: suspend (Command) -> Unit,
+    val dispose: suspend () -> Unit
 ) : DeviceSession(socket, scope) {
     val channel = Channel<ConsoleLine>(capacity = 4096)
 
@@ -36,6 +45,21 @@ private class Session(
                 DeviceCommViewModel.RX
             )
         )
+
+        val command: Command = try {
+            line.parse()
+        } catch (t: Throwable) {
+            Log.e("Session", "Couldn't parse line", t)
+            channel.send(
+                ConsoleLine(
+                    t.message ?: t.toString(),
+                    DeviceCommViewModel.ERR
+                )
+            )
+            return
+        }
+
+        receive(command)
     }
 
     override suspend fun onClosed() {
@@ -56,6 +80,8 @@ class DeviceCommViewModel(device: Device) : ViewModel() {
 
     val logs = ObservableRingBuffer<ConsoleLine>(LOGS_MAX_LINE)
 
+    val tags = mutableStateMapOf<String, Tag>()
+
     var state by mutableStateOf(UiState())
         private set
 
@@ -74,11 +100,22 @@ class DeviceCommViewModel(device: Device) : ViewModel() {
             return@launch
         }
 
-        val session = Session(socket, viewModelScope) {
-            viewModelScope.launch {
-                state = UiState("Disconnected")
+        val session = Session(
+            socket,
+            viewModelScope,
+            receive = {
+                if (it.declaration != CommandDeclarations.tag.value)
+                    return@Session
+
+                val value = it.state as Tag
+                tags[value.value] = value
+            },
+            dispose = {
+                viewModelScope.launch {
+                    state = UiState("Disconnected")
+                }
             }
-        }
+        )
         this@DeviceCommViewModel.session = session
 
         state = UiState("Connected", connected = true)
@@ -112,9 +149,17 @@ class DeviceCommViewModel(device: Device) : ViewModel() {
     }
 
     fun send(line: String) {
-        val session = session ?: return
+        val session = session
+        if (session == null) {
+            logs.write(ConsoleLine("session is not yet initialized", ERR))
+            return
+        }
 
-        session.send(line)
+        if (!session.send(line)) {
+            logs.write(ConsoleLine("failed to send line to channel", ERR))
+            return
+        }
+
         // send should called in main context
         logs.write(ConsoleLine(line, TX))
     }

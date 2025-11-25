@@ -9,4 +9,7 @@ data class Tag(
     val ip: Ip?,
     val date: String?,
     val cs: Int?
-)
+) {
+    override fun equals(other: Any?): Boolean = other is Tag && value == other.value
+    override fun hashCode(): Int = value.hashCode()
+}

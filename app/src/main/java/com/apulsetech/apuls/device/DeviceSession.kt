@@ -41,13 +41,13 @@ abstract class DeviceSession(val socket: DeviceSocket, scope: CoroutineScope) {
 
     private val closed = AtomicBoolean(false)
 
-    fun send(line: String) {
+    fun send(line: String): Boolean {
         if (closed.get()) {
             Log.w("DeviceSession", "Send requested after closing")
-            return
+            return false
         }
 
-        queue.trySend(line)
+        return queue.trySend(line).isSuccess
     }
 
     abstract suspend fun onReceived(line: String)
