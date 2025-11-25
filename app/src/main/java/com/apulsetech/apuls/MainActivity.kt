@@ -22,6 +22,9 @@ private const val ROUTE_DEVICE_COMM = "device_comm"
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        App.context = applicationContext
+
         enableEdgeToEdge()
         setContent {
             ApulsTheme {
