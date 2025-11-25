@@ -102,4 +102,5 @@ Serve,mqttbroker,MQTT Broker,String,sized(50),
 Serve,mqtttopic,MQTT Topic,String,sized(30),
 Serve,mqttqos,MQTT QoS,MqttQoS,,
 Serve,mqttalive,MQTT KeepAlive Time,Int,range(0..255),
+Tag,tag,Tag,Tag,,readonly
 System,bat,Battery,Int,,readonly
