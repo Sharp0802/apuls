@@ -1,5 +1,6 @@
 package com.apulsetech.apuls.command
 
+import com.apulsetech.apuls.data.Tag
 import com.apulsetech.apuls.data.text.IParser
 import java.io.InvalidObjectException
 import java.text.ParseException
@@ -20,6 +21,18 @@ data class Command(
 }
 
 class CommandParser : IParser<Command> {
+
+    val commands = CommandDeclarations.commands
+    val parameterized = CommandDeclarations.parameterizedCommands
+        .plus(
+            CommandDeclaration.parameterized<Tag>(
+                "tag",
+                "Tag",
+                true,
+                arrayOf()
+            )
+        )
+
     override fun parse(text: String): Command {
         if (text.isEmpty())
             throw ParseException("Cannot parse empty string", 0)
@@ -34,7 +47,7 @@ class CommandParser : IParser<Command> {
         if (delimiter == -1) {
             name = text.substring(1)
 
-            for (command in CommandDeclarations.commands) {
+            for (command in commands) {
                 if (command.name == name) {
                     return Command<Unit>(command, Unit)
                 }
@@ -43,7 +56,7 @@ class CommandParser : IParser<Command> {
             name = text.slice(1 until delimiter)
             val arg = text.substring(delimiter + 1)
 
-            for (command in CommandDeclarations.parameterizedCommands) {
+            for (command in parameterized) {
                 if (command.name != name)
                     continue
 
