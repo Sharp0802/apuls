@@ -26,7 +26,7 @@ import com.apulsetech.apuls.collection.ObservableRingBuffer
 
 @Composable
 fun TerminalView(
-    state: UiState,
+    state: com.apulsetech.apuls.viewmodel.UiState,
     input: String,
     logs: ObservableRingBuffer<ConsoleLine>,
     onInputChanged: (String) -> Unit,
@@ -40,9 +40,9 @@ fun TerminalView(
             lines = logs,
             mapColor = {
                 when (it) {
-                    DeviceCommViewModel.TX -> colorScheme.primary
-                    DeviceCommViewModel.RX -> colorScheme.secondary
-                    DeviceCommViewModel.ERR -> colorScheme.error
+                    _root_ide_package_.com.apulsetech.apuls.viewmodel.DeviceCommViewModel.TX -> colorScheme.primary
+                    _root_ide_package_.com.apulsetech.apuls.viewmodel.DeviceCommViewModel.RX -> colorScheme.secondary
+                    _root_ide_package_.com.apulsetech.apuls.viewmodel.DeviceCommViewModel.ERR -> colorScheme.error
                     else -> error("unreachable!")
                 }
             },

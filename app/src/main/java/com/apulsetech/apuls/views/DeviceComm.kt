@@ -47,11 +47,11 @@ fun DeviceCommView(device: Device) {
     val nav = rememberNavController()
     var title by rememberSaveable { mutableStateOf("") }
 
-    val vm: DeviceCommViewModel = viewModel(
+    val vm: com.apulsetech.apuls.viewmodel.DeviceCommViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return DeviceCommViewModel(device) as T
+                return _root_ide_package_.com.apulsetech.apuls.viewmodel.DeviceCommViewModel(device) as T
             }
         }
     )
