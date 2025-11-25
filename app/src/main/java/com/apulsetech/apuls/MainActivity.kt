@@ -14,7 +14,7 @@ import androidx.navigation.compose.rememberNavController
 import com.apulsetech.apuls.ui.theme.ApulsTheme
 import com.apulsetech.apuls.view.DeviceCommView
 import com.apulsetech.apuls.view.DeviceSelectView
-import com.apulsetech.apuls.view.DeviceSelectViewModel
+import com.apulsetech.apuls.viewmodel.DeviceSelectViewModel
 
 private const val ROUTE_DEVICE_SELECT = "device_select"
 private const val ROUTE_DEVICE_COMM = "device_comm"
