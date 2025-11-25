@@ -10,7 +10,7 @@ Net,mac,MAC Address,Mac,,readonly
 Serial,baudrate,Baudrate (Serial),Baudrate,,
 Tag,inventory,Inventory,,,
 Tag,cread,Continuous Read,ReadOp,,
-Tag,stop,Stop,,,
+Tag,stop,Stop,String,,
 Tag,read,Read,ReadOp,,
 Tag,write,Write,WriteOp,,
 Tag,lock,Lock,LockOp,,
@@ -102,3 +102,4 @@ Serve,mqttbroker,MQTT Broker,String,sized(50),
 Serve,mqtttopic,MQTT Topic,String,sized(30),
 Serve,mqttqos,MQTT QoS,MqttQoS,,
 Serve,mqttalive,MQTT KeepAlive Time,Int,range(0..255),
+System,bat,Battery,Int,,readonly
