@@ -28,7 +28,7 @@ internal class BluetoothDevice : Device {
         return _inner.address
     }
 
-    override fun open(): DeviceSocket? {
+    override fun open(): DeviceSocket {
         val socket = _inner.createRfcommSocketToServiceRecord(SPP_UUID)
         return try {
             socket.connect()
@@ -39,7 +39,8 @@ internal class BluetoothDevice : Device {
                 socket.close()
             } catch (_: IOException) {
             }
-            null
+
+            throw e
         }
     }
 
@@ -68,13 +69,29 @@ internal class BluetoothDeviceSocket(inner: BluetoothSocket) : DeviceSocket() {
     private val _input: InputStream = inner.inputStream
     private val _output: OutputStream = inner.outputStream
 
-    override fun read(buffer: ByteArray): Int {
-        return _input.read(buffer)
+    override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
+        return try {
+            _input.read(buffer, offset, length)
+        } catch (t: Throwable) {
+            Log.e("BluetoothDevice", "IO error during reading", t)
+            return -1
+        }
     }
 
-    override fun write(buffer: ByteArray) {
-        _output.write(buffer)
-        _output.flush()
+    override fun write(buffer: ByteArray, offset: Int, length: Int) {
+        try {
+            _output.write(buffer, offset, length)
+        } catch (t: Throwable) {
+            Log.e("BluetoothDevice", "IO error during writing", t)
+        }
+    }
+
+    override fun flush() {
+        try {
+            _output.flush()
+        } catch (t: Throwable) {
+            Log.e("BluetoothDevice", "IO error during flushing", t)
+        }
     }
 
     override fun close() {

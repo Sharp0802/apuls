@@ -1,6 +1,5 @@
 package com.apulsetech.apuls.views
 
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,13 +7,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.CellTower
@@ -22,7 +20,7 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.BottomAppBarDefaults
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ButtonDefaults.buttonColors
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
@@ -35,37 +33,34 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.apulsetech.apuls.command.Command
-import com.apulsetech.apuls.data.text.parse
-import com.apulsetech.apuls.device.BluetoothDeviceSocket
+import com.apulsetech.apuls.collection.ObservableRingBuffer
 import com.apulsetech.apuls.device.Device
+import com.apulsetech.apuls.device.DeviceSession
 import com.apulsetech.apuls.device.DeviceSocket
-import com.apulsetech.apuls.device.UsbDeviceSocket
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.text.ParseException
-import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 object Line {
     const val TX = 0
@@ -74,236 +69,180 @@ object Line {
 }
 
 data class UiState(
-    val state: String = "", val connected: Boolean = false, val loading: Boolean = false
+    val indicator: String = "", val connected: Boolean = false, val loading: Boolean = false
 )
 
-enum class ConnectionType {
-    Usb,
-    Bluetooth,
-}
+class Session(
+    socket: DeviceSocket, scope: CoroutineScope, val onClosed: suspend () -> Unit
+) : DeviceSession(socket, scope) {
+    val channel = Channel<ConsoleLine>(capacity = 4096)
 
-class DeviceCommViewModel : ViewModel() {
-    private val _state = MutableStateFlow(UiState())
-    val state = _state.asStateFlow()
-
-    var input by mutableStateOf("")
-        private set
-
-    private val _logs = mutableStateListOf<ConsoleLine>()
-    val logs: List<ConsoleLine> get() = _logs
-
-    private var openJob: Job? = null
-    private var socket: DeviceSocket? = null
-
-    private val txLock = ReentrantLock()
-
-    var callbacks = CopyOnWriteArrayList<(Command) -> Unit>()
-
-    val connectionType: ConnectionType
-        get() {
-            return when (socket) {
-                is BluetoothDeviceSocket -> ConnectionType.Bluetooth
-                is UsbDeviceSocket -> ConnectionType.Usb
-                else -> error("unreachable!")
-            }
-        }
-
-    fun open(device: Device) {
-        openJob = viewModelScope.launch(Dispatchers.IO) {
-            Dispatchers.Main.run {
-                _state.value = _state.value.copy(state = "Connecting...", loading = true)
-            }
-
-            val socket = try {
-                device.open()
-            } catch (e: Throwable) {
-                Dispatchers.Main.run {
-                    _state.value = _state.value.copy(state = e.toString(), loading = false)
-                }
-                return@launch
-            }
-
-            if (socket == null) {
-                Dispatchers.Main.run {
-                    _state.value = _state.value.copy(state = "Cannot open device", loading = false)
-                }
-                return@launch
-            }
-
-            this@DeviceCommViewModel.socket = socket
-
-            Dispatchers.Main.run {
-                _state.value = _state.value.copy(
-                    state = "Connected", loading = false, connected = true
-                )
-            }
-
-            val lineBuffer = mutableListOf<Byte>()
-            val readBuffer = ByteArray(16384)
-
-            while (isActive) {
-                val read = socket.read(readBuffer)
-                if (read == -1) break
-                if (read == 0) continue
-
-                for (i in 0 until read) {
-                    if (lineBuffer.lastOrNull() == '\r'.code.toByte() && readBuffer[i] == '\n'.code.toByte()) {
-                        val line = lineBuffer.subList(0, lineBuffer.lastIndex).toByteArray()
-                            .toString(Charsets.UTF_8)
-                        Log.i("DeviceLoop", line)
-                        onReceived(line)
-                        lineBuffer.clear()
-                    } else {
-                        lineBuffer.add(readBuffer[i])
-                    }
-                }
-            }
-
-            stop()
-        }
+    override suspend fun onReceived(line: String) {
+        channel.send(ConsoleLine(line, Line.RX))
     }
 
-    private fun onReceived(line: String) {
-        _logs.add(ConsoleLine(line, Line.RX))
+    override suspend fun onClosed() {
+        onClosed()
+    }
+}
 
-        val com: Command = try {
-            line.parse()
-        } catch (e: ParseException) {
-            _logs.add(ConsoleLine("error: ${e.message}", Line.ERR))
-            return
+class DeviceCommViewModel(device: Device) : ViewModel() {
+    companion object {
+        private const val LOGS_MAX_LINE = 256
+        private const val LOGS_BATCH = 8
+        private const val LOGS_BATCH_TIMEOUT = 100L
+    }
+
+    val logs = ObservableRingBuffer<ConsoleLine>(LOGS_MAX_LINE)
+
+    var state by mutableStateOf(UiState())
+        private set
+
+    var input by mutableStateOf("")
+
+    private var session: Session? = null
+    private var sessionJob = viewModelScope.launch(Dispatchers.Main) {
+        state = UiState("Connecting...", loading = true)
+
+        val socket = try {
+            withContext(Dispatchers.IO) {
+                device.open()
+            }
+        } catch (e: Throwable) {
+            state = UiState(e.message ?: "Couldn't open device")
+            return@launch
         }
 
-        for (callback in callbacks) {
-            try {
-                callback(com)
-            } catch (t: Throwable) {
-                Log.e("DeviceComm", "Error thrown in callback", t)
-                _logs.add(ConsoleLine("error: ${t.message}", Line.ERR))
+        val session = Session(socket, viewModelScope) {
+            viewModelScope.launch {
+                state = UiState("Disconnected")
             }
         }
+        this@DeviceCommViewModel.session = session
+
+        state = UiState("Connected", connected = true)
+
+        val buffer = ArrayList<ConsoleLine>(LOGS_BATCH)
+
+        fun flush() {
+            buffer.forEach {
+                logs.write(it)
+            }
+            buffer.clear()
+        }
+
+        while (isActive) {
+            val line = withTimeoutOrNull(LOGS_BATCH_TIMEOUT) {
+                session.channel.receive()
+            }
+            if (line == null) {
+                flush()
+                continue
+            }
+
+            buffer.add(line)
+            if (buffer.size >= LOGS_BATCH) {
+                flush()
+            }
+        }
+
+        session.close()
+        this@DeviceCommViewModel.session = null
     }
 
     fun send(line: String) {
-        val socket = socket ?: return
+        val session = session ?: return
 
-        txLock.withLock {
-            socket.write((line + "\r\n").toByteArray())
-        }
-
-        _logs.add(ConsoleLine(line, Line.TX))
+        session.send(line)
+        // send should called in main context
+        logs.write(ConsoleLine(line, Line.TX))
     }
 
-    fun updateInput(input: String) {
-        this.input = input
-    }
+    override fun onCleared() {
+        super.onCleared()
 
-    fun stop() {
-        socket?.close()
-
-        Dispatchers.Main.run {
-            _state.value = _state.value.copy(
-                state = "Disconnected", loading = false, connected = false
-            )
+        viewModelScope.launch(Dispatchers.IO + NonCancellable) {
+            sessionJob.cancelAndJoin()
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DeviceCommView(
-    device: Device, vm: DeviceCommViewModel = viewModel()
-) {
-    val state by vm.state.collectAsState()
+fun DeviceCommView(device: Device) {
     val nav = rememberNavController()
-
     var title by rememberSaveable { mutableStateOf("") }
 
-    vm.open(device)
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(title)
-                },
-                actions = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(end = 16.dp)
-                    ) {
-                        Text(
-                            text = state.state,
-                            color = if (state.connected) colorScheme.primary else colorScheme.error
-                        )
-                    }
-                }
-            )
-        },
-        bottomBar = {
-            BottomAppBar(
-                actions = {
-                    IconButton(onClick = { nav.navigate("settings") }) {
-                        Icon(Icons.Rounded.Settings, "Settings")
-                    }
-                    IconButton(onClick = { nav.navigate("terminal") }) {
-                        Icon(Icons.Rounded.Terminal, "Terminal")
-                    }
-                },
-                floatingActionButton = {
-                    FloatingActionButton(
-                        onClick = { nav.navigate("inventory") },
-                        containerColor = BottomAppBarDefaults.bottomAppBarFabColor,
-                        elevation = FloatingActionButtonDefaults.bottomAppBarFabElevation()
-                    ) {
-                        Icon(Icons.Rounded.CellTower, "Inventory")
-                    }
-                }
-            )
+    val vm: DeviceCommViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return DeviceCommViewModel(device) as T
+            }
         }
-    ) { inner ->
+    )
+
+    Scaffold(topBar = {
+        TopAppBar(title = { Text(title) }, actions = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(end = 16.dp)
+            ) {
+                Text(
+                    text = vm.state.indicator,
+                    color = if (vm.state.connected) colorScheme.primary else colorScheme.error
+                )
+            }
+        })
+    }, bottomBar = {
+        BottomAppBar(actions = {
+            IconButton(onClick = { nav.navigate("settings") }) {
+                Icon(Icons.Rounded.Settings, "Settings")
+            }
+            IconButton(onClick = { nav.navigate("terminal") }) {
+                Icon(Icons.Rounded.Terminal, "Terminal")
+            }
+        }, floatingActionButton = {
+            FloatingActionButton(
+                onClick = { nav.navigate("inventory") },
+                containerColor = BottomAppBarDefaults.bottomAppBarFabColor,
+                elevation = FloatingActionButtonDefaults.bottomAppBarFabElevation()
+            ) {
+                Icon(Icons.Rounded.CellTower, "Inventory")
+            }
+        })
+    }) { inner ->
         Column(modifier = Modifier.padding(inner)) {
             val padding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)
 
             NavHost(nav, startDestination = "inventory") {
                 composable("settings") {
-                    @Suppress("AssignedValueIsNeverRead")
                     title = "Settings"
                     BackHandler(true) { }
-
-                    if (state.connected) {
-                        Settings(
-                            comm = vm,
-                            modifier = Modifier.verticalScroll(rememberScrollState())
-                        )
-                    }
                 }
 
                 composable("terminal") {
-                    @Suppress("AssignedValueIsNeverRead")
                     title = "Terminal"
                     BackHandler(true) { }
 
                     DeviceCommContent(
-                        state = state,
+                        state = vm.state,
                         input = vm.input,
                         logs = vm.logs,
                         onInputChanged = {
-                            vm.updateInput(it)
+                            vm.input = it
                         },
                         onSubmit = {
                             vm.send(vm.input)
-                            vm.updateInput("")
+                            vm.input = ""
                         },
-                        modifier = Modifier.padding(padding)
+                        modifier = Modifier.padding(padding).fillMaxSize()
                     )
                 }
 
                 composable("inventory") {
-                    @Suppress("AssignedValueIsNeverRead")
                     title = "Inventory"
                     BackHandler(true) { }
-
-                    // TODO
                 }
             }
         }
@@ -315,7 +254,7 @@ fun DeviceCommView(
 fun DeviceCommContent(
     state: UiState,
     input: String,
-    logs: List<ConsoleLine>,
+    logs: ObservableRingBuffer<ConsoleLine>,
     onInputChanged: (String) -> Unit,
     onSubmit: () -> Unit,
     modifier: Modifier = Modifier
@@ -356,15 +295,15 @@ fun DeviceCommContent(
             val enabled = state.connected && input.isNotEmpty()
 
             val background = if (enabled) {
-                ButtonDefaults.buttonColors().containerColor
+                buttonColors().containerColor
             } else {
-                ButtonDefaults.buttonColors().disabledContainerColor
+                buttonColors().disabledContainerColor
             }
 
             val foreground = if (enabled) {
-                ButtonDefaults.buttonColors().contentColor
+                buttonColors().contentColor
             } else {
-                ButtonDefaults.buttonColors().disabledContentColor
+                buttonColors().disabledContentColor
             }
 
             val height = TextFieldDefaults.MinHeight

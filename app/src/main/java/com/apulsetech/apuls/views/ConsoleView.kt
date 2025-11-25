@@ -2,7 +2,6 @@ package com.apulsetech.apuls.views
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.LocalContentColor
@@ -15,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
+import com.apulsetech.apuls.collection.ObservableRingBuffer
 
 @Stable
 @Immutable
@@ -24,12 +24,18 @@ data class ConsoleLine(
 )
 
 @Composable
-fun ConsoleView(lines: List<ConsoleLine>, mapColor: (Int) -> Color?, modifier: Modifier = Modifier) {
+fun ConsoleView(
+    lines: ObservableRingBuffer<ConsoleLine>,
+    mapColor: (Int) -> Color?,
+    modifier: Modifier = Modifier
+) {
+    val version = lines.version
+    val size = lines.size
     val state = rememberLazyListState()
 
-    LaunchedEffect(lines.size) {
-        if (lines.isNotEmpty()) {
-            state.animateScrollToItem(lines.lastIndex)
+    LaunchedEffect(version) {
+        if (size > 0) {
+            state.animateScrollToItem(size - 1)
         }
     }
 
@@ -37,7 +43,11 @@ fun ConsoleView(lines: List<ConsoleLine>, mapColor: (Int) -> Color?, modifier: M
         modifier = modifier.horizontalScroll(rememberScrollState()),
         state = state
     ) {
-        itemsIndexed(lines) { _, line ->
+        items(
+            count = size,
+            key = { index -> lines.keyFor(index) }
+        ) { index ->
+            val line = lines[index]
             Text(
                 text = line.text,
                 color = mapColor(line.type) ?: LocalContentColor.current,
