@@ -20,15 +20,14 @@ class CommandParser : IParser<Command> {
     override fun parse(text: String): Command {
         if (text.isEmpty()) throw ParseException("Cannot parse empty string", 0)
 
-        val delimiter = if (text.startsWith("-stop") || text.startsWith("-start")) {
+        var delimiter = when (text[0]) {
+            ':' -> text.indexOf(' ')
+            '-' -> text.indexOf('=')
+            else -> throw ParseException("Unrecognized STX character '${text[0]}'", 0)
+        }
+        if (delimiter == -1 && (text.startsWith("-stop") || text.startsWith("-start"))) {
             // why???
-            text.indexOf(' ')
-        } else {
-            when (text[0]) {
-                ':' -> text.indexOf(' ')
-                '-' -> text.indexOf('=')
-                else -> throw ParseException("Unrecognized STX character '${text[0]}'", 0)
-            }
+            delimiter = text.indexOf(' ')
         }
 
         val name: String
