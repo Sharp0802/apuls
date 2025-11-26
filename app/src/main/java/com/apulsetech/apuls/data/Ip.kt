@@ -1,6 +1,8 @@
 package com.apulsetech.apuls.data
 
-data class Ip(val b0: UByte, val b1: UByte, val b2: UByte, val b3: UByte) {
+import java.io.Serializable
+
+data class Ip(val b0: UByte, val b1: UByte, val b2: UByte, val b3: UByte) : Serializable {
     override fun toString(): String {
         return "$b0.$b1.$b2.$b3"
     }

@@ -1,5 +1,7 @@
 package com.apulsetech.apuls.data
 
+import java.io.Serializable
+
 data class Mac(
     val b0: UByte,
     val b1: UByte,
@@ -7,7 +9,7 @@ data class Mac(
     val b3: UByte,
     val b4: UByte,
     val b5: UByte
-) {
+) : Serializable {
     private fun nibble(n: Int): Char = "0123456789abcdef"[n]
 
     override fun toString(): String {
