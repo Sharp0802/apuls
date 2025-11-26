@@ -1,19 +1,19 @@
 package com.apulsetech.apuls
 
-import kotlinx.coroutines.channels.Channel
-
+import java.util.concurrent.CopyOnWriteArrayList
 
 class Event<T> {
-    private val callbacks = Channel<suspend (T) -> Unit>(capacity = Channel.UNLIMITED)
+    private val callbacks = CopyOnWriteArrayList<suspend (T) -> Unit>()
 
     suspend operator fun invoke(v: T) {
-        while (true) {
-            val fn = callbacks.tryReceive().getOrNull() ?: break
-            fn(v)
-        }
+        callbacks.forEach { it(v) }
     }
 
-    suspend fun register(fn: suspend (T) -> Unit) {
-        callbacks.send(fn)
+    fun register(fn: suspend (T) -> Unit) {
+        callbacks.add(fn)
+    }
+
+    fun unregister(fn: suspend (T) -> Unit) {
+        callbacks.remove(fn)
     }
 }

@@ -20,6 +20,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -120,18 +121,24 @@ private fun CommandField(vm: DeviceCommViewModel, command: ParameterizedCommandD
     val begin by remember { mutableStateOf(System.currentTimeMillis()) }
     var end by remember { mutableStateOf(System.currentTimeMillis()) }
 
-    LaunchedEffect(Unit) {
-        var callback: (suspend (Command) -> Unit)? = null
-        callback = {
-            if (it.declaration == command) {
-                value = it.state
+    val callback: suspend (Command) -> Unit = remember(vm, command) {
+        { received ->
+            if (received.declaration == command) {
+                value = received.state
             } else {
                 end = System.currentTimeMillis()
-                vm.onReceived.register(callback!!)
             }
         }
+    }
 
+    DisposableEffect(vm, command) {
         vm.onReceived.register(callback)
+        onDispose {
+            vm.onReceived.unregister(callback)
+        }
+    }
+
+    LaunchedEffect(command) {
         vm.send(command.getter())
     }
 
