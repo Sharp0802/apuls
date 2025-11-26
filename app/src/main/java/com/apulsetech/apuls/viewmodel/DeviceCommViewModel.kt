@@ -12,6 +12,7 @@ import com.apulsetech.apuls.Notify
 import com.apulsetech.apuls.collection.ObservableRingBuffer
 import com.apulsetech.apuls.command.Command
 import com.apulsetech.apuls.command.CommandDeclarations
+import com.apulsetech.apuls.command.ParameterizedCommandDeclaration
 import com.apulsetech.apuls.data.Tag
 import com.apulsetech.apuls.data.text.parse
 import com.apulsetech.apuls.device.Device
@@ -81,6 +82,7 @@ class DeviceCommViewModel(device: Device) : ViewModel() {
     val logs = ObservableRingBuffer<ConsoleLine>(LOGS_MAX_LINE)
 
     val tags = mutableStateMapOf<String, Tag>()
+    val settingsCache = mutableStateMapOf<String, Any>()
 
     var state by mutableStateOf(UiState())
         private set
@@ -103,6 +105,9 @@ class DeviceCommViewModel(device: Device) : ViewModel() {
         }
 
         val session = Session(socket, viewModelScope, receive = {
+            if (it.declaration is ParameterizedCommandDeclaration) {
+                settingsCache[it.declaration.name] = it.state
+            }
             onReceived(it)
 
             if (it.declaration != CommandDeclarations.tag.value) return@Session
