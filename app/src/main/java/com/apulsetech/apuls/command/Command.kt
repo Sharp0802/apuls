@@ -20,7 +20,7 @@ class CommandParser : IParser<Command> {
     override fun parse(text: String): Command {
         if (text.isEmpty()) throw ParseException("Cannot parse empty string", 0)
 
-        val delimiter = if (text.startsWith("-stop")) {
+        val delimiter = if (text.startsWith("-stop") || text.startsWith("-start")) {
             // why???
             text.indexOf(' ')
         } else {

@@ -1,8 +1,5 @@
 package com.apulsetech.apuls.viewmodel
 
-import android.content.Context
-import android.os.VibrationEffect
-import android.os.VibratorManager
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -10,7 +7,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.apulsetech.apuls.App
+import com.apulsetech.apuls.Event
+import com.apulsetech.apuls.Notify
 import com.apulsetech.apuls.collection.ObservableRingBuffer
 import com.apulsetech.apuls.command.Command
 import com.apulsetech.apuls.command.CommandDeclarations
@@ -89,6 +87,8 @@ class DeviceCommViewModel(device: Device) : ViewModel() {
 
     var input by mutableStateOf("")
 
+    val onReceived = Event<Command>()
+
     private var session: Session? = null
     private var sessionJob = viewModelScope.launch(Dispatchers.Main) {
         state = UiState("Connecting...", loading = true)
@@ -103,12 +103,14 @@ class DeviceCommViewModel(device: Device) : ViewModel() {
         }
 
         val session = Session(socket, viewModelScope, receive = {
+            onReceived(it)
+
             if (it.declaration != CommandDeclarations.tag.value) return@Session
 
             val value = it.state as Tag
             tags[value.value] = value
 
-            vibrate(10)
+            Notify.tag()
         }, dispose = {
             viewModelScope.launch {
                 state = UiState("Disconnected")
@@ -144,13 +146,6 @@ class DeviceCommViewModel(device: Device) : ViewModel() {
 
         session.close()
         this@DeviceCommViewModel.session = null
-    }
-
-    private fun vibrate(ms: Long) {
-        val man = App.context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-        val vibrator = man.defaultVibrator
-
-        vibrator.vibrate(VibrationEffect.createOneShot(ms, 255))
     }
 
     fun send(line: String) {

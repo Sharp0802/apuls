@@ -5,7 +5,7 @@ import kotlin.math.min
 
 class DeviceSocketBuffer(private val socket: DeviceSocket) {
     companion object {
-        private const val SIZE = 0x2000
+        private const val SIZE = 0x8000
         private const val MASK = SIZE - 1
     }
 

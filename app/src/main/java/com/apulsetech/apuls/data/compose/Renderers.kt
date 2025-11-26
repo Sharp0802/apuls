@@ -19,6 +19,7 @@ object Renderers {
         register { IntRenderer() }
         register { IpRenderer() }
         register { LockOpRenderer() }
+        register { MacRenderer() }
         register { MaskRenderer() }
         register { MqttQoSRenderer() }
         register { SelectQueryRenderer() }

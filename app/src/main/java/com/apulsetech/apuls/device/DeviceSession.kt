@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -14,17 +15,12 @@ abstract class DeviceSession(val socket: DeviceSocket, scope: CoroutineScope) {
     private val queue = Channel<String>(capacity = Channel.UNLIMITED)
 
     private val thread = scope.launch(Dispatchers.IO) {
-        val crlf = "\r\n".encodeToByteArray()
         val buffer = DeviceSocketBuffer(socket)
         while (isActive) {
-            var sent = false
             while (true) {
-                val send = queue.tryReceive().getOrNull()?.encodeToByteArray() ?: break
+                val line = queue.tryReceive().getOrNull() ?: break
+                val send = (line + "\r\n").toByteArray()
                 socket.write(send, 0, send.size)
-                socket.write(crlf, 0, crlf.size)
-                sent = true
-            }
-            if (sent) {
                 socket.flush()
             }
 

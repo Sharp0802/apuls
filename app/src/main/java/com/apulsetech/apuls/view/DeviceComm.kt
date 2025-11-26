@@ -1,6 +1,7 @@
 package com.apulsetech.apuls.view
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.BottomAppBarDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
@@ -66,22 +68,25 @@ fun DeviceCommView(device: Device) {
             }
         })
     }, bottomBar = {
-        BottomAppBar(actions = {
-            IconButton(onClick = { nav.navigate("settings") }) {
-                Icon(Icons.Rounded.Settings, "Settings")
+        BottomAppBar(
+            actions = {
+                IconButton(onClick = { nav.navigate("settings") }) {
+                    Icon(Icons.Rounded.Settings, "Settings")
+                }
+                IconButton(onClick = { nav.navigate("terminal") }) {
+                    Icon(Icons.Rounded.Terminal, "Terminal")
+                }
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = { nav.navigate("inventory") },
+                    containerColor = BottomAppBarDefaults.bottomAppBarFabColor,
+                    elevation = FloatingActionButtonDefaults.bottomAppBarFabElevation()
+                ) {
+                    Icon(Icons.Rounded.CellTower, "Inventory")
+                }
             }
-            IconButton(onClick = { nav.navigate("terminal") }) {
-                Icon(Icons.Rounded.Terminal, "Terminal")
-            }
-        }, floatingActionButton = {
-            FloatingActionButton(
-                onClick = { nav.navigate("inventory") },
-                containerColor = BottomAppBarDefaults.bottomAppBarFabColor,
-                elevation = FloatingActionButtonDefaults.bottomAppBarFabElevation()
-            ) {
-                Icon(Icons.Rounded.CellTower, "Inventory")
-            }
-        })
+        )
     }) { inner ->
         Column(modifier = Modifier.padding(inner)) {
             val padding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)
@@ -90,6 +95,14 @@ fun DeviceCommView(device: Device) {
                 composable("settings") {
                     title = "Settings"
                     BackHandler(true) { }
+
+                    if (vm.state.connected) {
+                        SettingsView(vm)
+                    } else {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            CircularProgressIndicator()
+                        }
+                    }
                 }
 
                 composable("terminal") {
@@ -132,7 +145,8 @@ fun DeviceCommView(device: Device) {
                         },
                         onClear = {
                             vm.tags.clear()
-                        })
+                        }
+                    )
                 }
             }
         }
