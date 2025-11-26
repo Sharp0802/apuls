@@ -2,6 +2,7 @@ package com.apulsetech.apuls.data.compose
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
@@ -49,7 +50,9 @@ class MacRenderer(override val singleLine: Boolean = false) : Renderer<Mac>() {
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Companion.Decimal),
                     singleLine = true,
                     enabled = enabled,
-                    modifier = Modifier.width(72.dp)
+                    modifier = Modifier
+                        .width(72.dp)
+                        .heightIn(min = 44.dp)
                 )
             }
         }

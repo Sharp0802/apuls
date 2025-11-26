@@ -1,14 +1,16 @@
 package com.apulsetech.apuls.data.compose
 
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import com.apulsetech.apuls.command.IConstraint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,7 +40,7 @@ class StringRenderer(override val singleLine: Boolean = true) : Renderer<String>
             _state.value = _state.value.copy(value = value)
         }
 
-        TextField(
+        OutlinedTextField(
             value = state.value ?: "",
             onValueChange = {
                 _state.value = _state.value.copy(value = it)
@@ -68,7 +70,9 @@ class StringRenderer(override val singleLine: Boolean = true) : Renderer<String>
                 }
             },
             enabled = enabled,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            singleLine = true,
+            modifier = modifier.heightIn(min = 44.dp)
         )
     }
 }

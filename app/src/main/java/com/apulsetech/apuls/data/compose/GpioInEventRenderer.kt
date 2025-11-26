@@ -2,6 +2,7 @@ package com.apulsetech.apuls.data.compose
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
@@ -46,7 +47,9 @@ class GpioInEventRenderer(override val singleLine: Boolean = false) : Renderer<G
                 ),
                 singleLine = true,
                 enabled = enabled,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 44.dp)
             )
 
             Spacer(Modifier.width(8.dp))
@@ -58,7 +61,9 @@ class GpioInEventRenderer(override val singleLine: Boolean = false) : Renderer<G
                 },
                 singleLine = true,
                 enabled = enabled,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 44.dp)
             )
         }
     }
