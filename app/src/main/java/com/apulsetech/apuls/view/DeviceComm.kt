@@ -131,7 +131,7 @@ fun DeviceCommView(device: Device) {
                     BackHandler(true) { }
 
                     InventoryView(
-                        tags = vm.tags.values,
+                        tags = vm.tags,
                         modifier = Modifier
                             .padding(padding)
                             .fillMaxSize(),

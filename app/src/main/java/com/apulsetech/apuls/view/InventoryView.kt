@@ -42,15 +42,16 @@ fun TableCell(text: Any?, modifier: Modifier) {
 
 @Composable
 fun InventoryView(
-    tags: Iterable<Tag>,
+    tags: Map<Tag, Int>,
     onStart: () -> Unit,
     onStop: () -> Unit,
     onClear: () -> Unit,
     modifier: Modifier
 ) {
-    val snapshot = tags.sortedBy { it.value }
+    val snapshot = tags.entries.sortedByDescending { it.value }
 
     val modifiers = arrayOf(
+        Modifier.width(60.dp),
         Modifier.width(420.dp),
         Modifier.width(60.dp),
         Modifier.width(60.dp),
@@ -62,7 +63,11 @@ fun InventoryView(
     )
 
     Column(modifier) {
-        Box(Modifier.weight(1f).border(1.dp, colorScheme.surfaceBright, RoundedCornerShape(4.dp))) {
+        Box(
+            Modifier
+                .weight(1f)
+                .border(1.dp, colorScheme.surfaceBright, RoundedCornerShape(4.dp))
+        ) {
             Column(
                 Modifier
                     .horizontalScroll(rememberScrollState())
@@ -73,27 +78,30 @@ fun InventoryView(
                         .fillMaxWidth()
                         .background(colorScheme.surfaceContainerHigh)
                 ) {
-                    TableCell("Tag", modifiers[0])
-                    TableCell("ANT", modifiers[1])
-                    TableCell("RSSI", modifiers[2])
-                    TableCell("RID", modifiers[3])
-                    TableCell("Freq", modifiers[4])
-                    TableCell("IP", modifiers[5])
-                    TableCell("Date", modifiers[6])
-                    TableCell("CS", modifiers[7])
+                    TableCell("CNT", modifiers[0])
+                    TableCell("Tag", modifiers[1])
+                    TableCell("ANT", modifiers[2])
+                    TableCell("RSSI", modifiers[3])
+                    TableCell("RID", modifiers[4])
+                    TableCell("Freq", modifiers[5])
+                    TableCell("IP", modifiers[6])
+                    TableCell("Date", modifiers[7])
+                    TableCell("CS", modifiers[8])
                 }
 
                 LazyColumn {
                     items(snapshot) {
+                        val (tag, cnt) = it
                         Row(Modifier.fillMaxWidth()) {
-                            TableCell(it.value, modifiers[0])
-                            TableCell(it.ant, modifiers[1])
-                            TableCell(it.rssi, modifiers[2])
-                            TableCell(it.rid, modifiers[3])
-                            TableCell(it.freq, modifiers[4])
-                            TableCell(it.ip, modifiers[5])
-                            TableCell(it.date, modifiers[6])
-                            TableCell(it.cs, modifiers[7])
+                            TableCell(cnt, modifiers[0])
+                            TableCell(tag.value, modifiers[1])
+                            TableCell(tag.ant, modifiers[2])
+                            TableCell(tag.rssi, modifiers[3])
+                            TableCell(tag.rid, modifiers[4])
+                            TableCell(tag.freq, modifiers[5])
+                            TableCell(tag.ip, modifiers[6])
+                            TableCell(tag.date, modifiers[7])
+                            TableCell(tag.cs, modifiers[8])
                         }
                     }
                 }

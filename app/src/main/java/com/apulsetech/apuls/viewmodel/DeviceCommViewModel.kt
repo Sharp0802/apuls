@@ -81,7 +81,7 @@ class DeviceCommViewModel(device: Device) : ViewModel() {
 
     val logs = ObservableRingBuffer<ConsoleLine>(LOGS_MAX_LINE)
 
-    val tags = mutableStateMapOf<String, Tag>()
+    val tags = mutableStateMapOf<Tag, Int>()
     val settingsCache = mutableStateMapOf<String, Any>()
 
     var state by mutableStateOf(UiState())
@@ -113,7 +113,8 @@ class DeviceCommViewModel(device: Device) : ViewModel() {
             if (it.declaration != CommandDeclarations.tag.value) return@Session
 
             val value = it.state as Tag
-            tags[value.value] = value
+
+            tags[value] = tags.getOrElse(value) { 0 } + 1
 
             Notify.tag()
         }, dispose = {
