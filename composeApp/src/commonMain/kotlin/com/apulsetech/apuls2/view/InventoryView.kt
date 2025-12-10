@@ -47,9 +47,7 @@ import com.apulsetech.apuls2.command.TypeParameterizedCommandDeclaration
 import com.apulsetech.apuls2.data.Tag
 import com.apulsetech.apuls2.net.Session
 import com.apulsetech.apuls2.platform.NoopDevice
-import io.github.vinceglb.filekit.FileKit
-import io.github.vinceglb.filekit.dialogs.openFileSaver
-import io.github.vinceglb.filekit.write
+import com.apulsetech.apuls2.platform.pickFileSaveLocation
 import io.github.vinceglb.filekit.writeString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -145,11 +143,10 @@ class InventoryViewModel(val session: Session) : ViewModel() {
 
     fun save() {
         viewModelScope.launch {
-            val file = FileKit.openFileSaver(
+            val file = pickFileSaveLocation(
                 suggestedName = "inventory",
                 extension = "csv"
-            )
-            if (file == null) return@launch
+            ) ?: return@launch
 
             file.writeString(serialize())
         }
