@@ -104,6 +104,7 @@ kotlin {
             implementation(libs.filekit.dialogs)
             implementation(libs.filekit.dialogs.compose)
             implementation(libs.filekit.coil)
+            implementation(libs.jakarta.mail)
             implementation(libs.material3)
             implementation(compose.materialIconsExtended)
             implementation(libs.navigation.compose)

@@ -75,6 +75,9 @@ class InventoryViewModel(val session: Session) : ViewModel() {
             }
 
         private val time = TimeSource.Monotonic
+
+        var current: InventoryViewModel? = null
+            private set
     }
 
     private val _tags = MutableStateFlow(emptyMap<Tag, Int>())
@@ -113,6 +116,7 @@ class InventoryViewModel(val session: Session) : ViewModel() {
     }
 
     init {
+        current = this
         session.onReceive(job)
     }
 
