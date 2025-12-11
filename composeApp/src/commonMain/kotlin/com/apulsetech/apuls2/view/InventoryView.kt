@@ -80,7 +80,7 @@ class InventoryViewModel(val session: Session) : ViewModel() {
             private set
     }
 
-    private val _tags = MutableStateFlow(emptyMap<Tag, Int>())
+    private val _tags = MutableStateFlow(emptyMap<String, Pair<Tag, Int>>())
     val tags = _tags.asStateFlow()
 
     private val _timestamps = ConcurrentLinkedQueue<TimeSource.Monotonic.ValueTimeMark>()
@@ -108,9 +108,9 @@ class InventoryViewModel(val session: Session) : ViewModel() {
     private val job: suspend (Command) -> Unit = cb@{
         if (it.declaration != CommandDeclarations.tag.value) return@cb
         val state = it.state as? Tag ?: return@cb
-        val cnt = (_tags.value[state] ?: 0) + 1
+        val cnt = (_tags.value[state.tag]?.second ?: 0) + 1
 
-        _tags.value += (state to cnt)
+        _tags.value += (state.tag to Pair(state, cnt))
 
         _timestamps.add(time.markNow())
     }
@@ -307,10 +307,11 @@ fun InventoryView(session: Session, modifier: Modifier = Modifier) {
                         )
                     }
                 } else {
-                    val sorted = tags.toList().sortedWith { a, b -> -options.sortBy.compare(a, b) }
+                    val sorted = tags.toList().sortedWith { a, b -> -options.sortBy.compare(a.second, b.second) }
                     LazyColumn(modifier) {
                         items(sorted) {
-                            val (tag, cnt) = it
+                            val (_, pair) = it
+                            val (tag, cnt) = pair
                             TagView(tag, cnt, options.tagView, options.multiBase)
                         }
                     }

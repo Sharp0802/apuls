@@ -12,8 +12,6 @@ data class Tag(
     val date: String? = null,
     val cs: Int? = null
 ) : Serializable {
-    override fun equals(other: Any?): Boolean = other is Tag && other.tag == tag
-    override fun hashCode(): Int = tag.hashCode()
     override fun toString(): String =
         "$tag,${ant ?: ""},${rssi ?: ""},${rid ?: ""},${freq ?: ""},${ip ?: ""},${date ?: ""},${cs ?: ""}"
 }

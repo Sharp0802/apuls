@@ -61,7 +61,7 @@ fun TagView(
 
                     if (available > 0 && lineWidth > available && letterSpacing > 0f) {
                         val ratio = (available / lineWidth).coerceAtMost(1f)
-                        val newSpacing = (letterSpacing * ratio * 0.95f).coerceAtLeast(0f)
+                        val newSpacing = (letterSpacing * ratio * 0.5f)
 
                         if (newSpacing < letterSpacing - 0.01f) {
                             letterSpacing = newSpacing
