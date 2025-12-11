@@ -104,8 +104,8 @@ kotlin {
             implementation(libs.filekit.dialogs)
             implementation(libs.filekit.dialogs.compose)
             implementation(libs.filekit.coil)
-            implementation(libs.jakarta.mail)
             implementation(libs.material3)
+            compileOnly(libs.jakarta.mail)
             implementation(compose.materialIconsExtended)
             implementation(libs.navigation.compose)
             implementation(compose.runtime)
@@ -121,6 +121,7 @@ kotlin {
             implementation(libs.kotlin.test)
         }
         jvmMain.dependencies {
+            implementation(libs.jakarta.mail)
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
         }
